@@ -1,0 +1,16 @@
+@page
+@model OAuthCallbackModel
+@{
+    ViewData["Title"] = "OAuth Callback";
+}
+
+<input type="hidden" id="oauthSuccess" value="@Model.Success.ToString().ToLower()" />
+<input type="hidden" id="oauthToken" value="@Model.Token" />
+<input type="hidden" id="oauthEmail" value="@Model.Email" />
+<input type="hidden" id="oauthServerType" value="@Model.ServerType" />
+<input type="hidden" id="oauthError" value="@Model.Error" />
+<div id="app"></div>
+
+@section Scripts {
+    <script src="~/dist/oauthCallback.js" asp-append-version="true"></script>
+}

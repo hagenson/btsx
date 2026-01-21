@@ -1,0 +1,31 @@
+@page
+@model ContactModel
+@{
+    ViewData["Title"] = "Contact";
+}
+<h1>@ViewData["Title"]</h1>
+
+<div class="contact-info">
+    <p class="lead">Get in touch with us for support or inquiries.</p>
+    
+    <h2>Contact Details</h2>
+    <dl class="row">
+        <dt class="col-sm-3">Support:</dt>
+        <dd class="col-sm-9">
+            <a href="mailto:@Model.SupportEmail">@Model.SupportEmail</a>
+        </dd>
+        
+        <dt class="col-sm-3">Developer:</dt>
+        <dd class="col-sm-9">
+            <a href="mailto:btsx@hagenson.com">btsx@hagenson.com</a>
+        </dd>
+        
+        <dt class="col-sm-3">Source Code:</dt>
+        <dd class="col-sm-9">
+            <a href="https://github.com/hagenson/btsx" target="_blank" rel="noopener noreferrer">
+                https://github.com/hagenson/btsx
+                <i class="bi bi-box-arrow-up-right ms-1"></i>
+            </a>
+        </dd>
+    </dl>
+</div>

@@ -1,0 +1,63 @@
+@page
+@model PrivacyModel
+@{
+    ViewData["Title"] = "Privacy Policy";
+}
+<h1>@ViewData["Title"]</h1>
+
+<div class="privacy-policy">
+    <p class="lead">Your privacy is important to us. This privacy policy explains how the Mail Migration Tool collects, uses, and protects your information.</p>
+    
+    <h2>Information We Collect</h2>
+    <p>The Mail Migration Tool collects the following information:</p>
+    <ul>
+        <li>Email account connection parameters (server addresses, usernames, ports).</li>
+        <li>Email account passwords.</li>
+        <li>OAuth access tokens (when using OAuth authentication).</li>
+    </ul>
+    
+    <h2>How We Use Your Information</h2>
+    <p>The data we collect is used exclusively for the following purposes:</p>
+    <ul>
+        <li><strong>Email Migration:</strong> To log into your email accounts and transfer data between them during a migration job.</li>
+        <li><strong>Job Continuity:</strong> To restart the migration job in the event of a service restart before a migration job has completed.</li>
+        <li><strong>Status Updates:</strong> To inform you of the outcome of the migration job.</li>
+    </ul>
+    
+    <h2>Data Storage and Security</h2>
+    <p>We take the security of your data seriously:</p>
+    <ul>
+        <li>Data will be stored for up to 7 days after the completion of the migration job.</li>
+        <li>Passwords and authentication tokens are encrypted at rest using industry-standard AES-256 encryption.</li>
+        <li>Passwords and authentication tokens are deleted immediately upon completion of the migration job.</li>
+        <li>Passwords and authentication tokens are encrypted in such a way that system administrator users cannot view them.</li>
+        <li>Only the minimum necessary information is retained to ensure job completion.</li>
+        <li>You have the option to delete any data associated with a migration job once it is complete without waiting 7 days.</li>
+    </ul>
+    
+    <h2>Email Content</h2>
+    <p>No data from any emails the system accesses is retained. The Mail Migration Tool reads and transfers your emails but does not store, log, or retain any email content, attachments, or metadata beyond what is necessary to complete the active transfer.</p>
+    
+    <h2>Data Sharing</h2>
+    <p>We do not share your information with anyone. No data entered into or accessed by the system will be shared with third parties, affiliates, or any other entities.</p>
+    
+    <h2>Your Responsibility</h2>
+    <p>After your migration job is complete, you are responsible for managing the credentials of both your source and destination email accounts according to your organization's security policies.</p>
+    <p>It would be good practice to change the password on your IMAP email accounts after using this tool. The system will attempt to
+        revoke any access tokens it has obtained from OAuth providers when a Migration Job is complete. You should review this in the
+        security console of your cloud provider and manually revoke any access that has been retained.</p> 
+
+    <h2>You have a Choice</h2>
+    <p>If you are not satisfied with any part of this privacy policy, or are uncomfortable providing account information to
+        an outside party, please do not use this website. We urge you to download the original source code for the system
+        and build and run it on a trusted machine.</p>
+    <p>
+        The source code for this application and instructions for how to build and run it are available at
+        <a href="https://github.com/hagenson/btsx" target="_blank" rel="noopener noreferrer">
+            https://github.com/hagenson/btsx
+            <i class="bi bi-box-arrow-up-right ms-1"></i>
+        </a>
+    </p>
+    
+    <p class="text-muted mt-4"><small>Last updated: January 2026</small></p>
+</div>

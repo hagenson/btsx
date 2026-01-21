@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": false,
+    "outDir": "./wwwroot/dist",
+    "rootDir": "./ClientApp",
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["ClientApp/**/*"],
+  "exclude": ["node_modules", "wwwroot"]
+}
