@@ -2,6 +2,7 @@ using BtsxWeb;
 using BtsxWeb.Hubs;
 using BtsxWeb.Models;
 using BtsxWeb.Services;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,16 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+var hugoPublicPath = Path.Combine(app.Environment.ContentRootPath, "..", "docs", "public");
+if (Directory.Exists(hugoPublicPath))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(hugoPublicPath),
+        RequestPath = "/help"
+    });
+}
 
 app.UseRouting();
 app.UseSession();

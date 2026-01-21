@@ -20,4 +20,8 @@
     <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 
+  <ItemGroup>
+    <Content Include="..\docs\public\**\*" LinkBase="docs\public" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
