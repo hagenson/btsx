@@ -385,3 +385,8 @@ GoogolSuxWeb/JobStorage/
 /btsxcli/Properties/launchSettings.json
 /btsxweb/appsettings.Development.json
 /btsxweb/wwwroot/dist
+
+# Hugo documentation site
+docs/public/
+docs/resources/_gen/
+docs/.hugo_build.lock

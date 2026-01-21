@@ -1,0 +1,29 @@
+baseURL = '/help/'
+languageCode = 'en-us'
+title = 'BTSX Help Documentation'
+theme = 'hugo-book'
+
+[params]
+  BookRepo = 'https://github.com/fhagenson/btsx'
+  BookEditPath = 'edit/main/docs/content'
+  BookSearch = true
+  BookComments = false
+  BookToC = true
+  BookMenuBundle = '/menu'
+  BookSection = '/'
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+  [markup.tableOfContents]
+    endLevel = 3
+    ordered = false
+    startLevel = 2
+
+[menu]
+  [[menu.before]]
+    identifier = "github"
+    name = "GitHub"
+    url = "https://github.com/fhagenson/btsx"
+    weight = 10
