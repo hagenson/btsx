@@ -8,6 +8,11 @@ dotnet restore BTSX.sln
 cd btsxweb
 npm install
 
+# Hugo documentation (requires Hugo to be installed)
+# Install Hugo from https://gohugo.io/installation/
+# Linux/macOS: ./docs/setup-theme.sh
+# Windows: .\docs\setup-theme.ps1
+
 # Set required environment variable for encryption
 # Linux/macOS: export ENCRYPTION_KEY="$(openssl rand -base64 32)"
 # Windows: $env:ENCRYPTION_KEY = [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
@@ -20,6 +25,10 @@ npm install
   - Linux/macOS: `./btsxweb/build-frontend.sh`
   - Or manually: `cd btsxweb && npm run build`
 - **Build Frontend (dev mode with watch)**: `cd btsxweb && npm run dev`
+- **Build Documentation**:
+  - Windows: `.\build-docs.ps1`
+  - Linux/macOS: `./build-docs.sh`
+  - Or manually: `cd docs && hugo --cleanDestinationDir && cd .. && cp -r docs/public btsxweb/wwwroot/help`
 - **Lint**: No linter configured
 - **Test**: No unit tests configured
 - **Run Console App**: `dotnet run --project ImapMove/ImapMove.csproj -- <srcUser> <srcServer> <srcPassword> <dstUser> <dstServer> <dstPassword>`
@@ -38,6 +47,11 @@ npm install
 - TypeScript (Type-safe JavaScript)
 - Webpack (Module bundler)
 - Bootstrap 5.3 (CSS framework)
+
+### Documentation
+- Hugo (Static site generator)
+- Theme: hugo-geekdoc
+- Output: Built to `btsxweb/wwwroot/help` for serving by web app
 
 ## Architecture
 
