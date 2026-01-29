@@ -268,11 +268,13 @@ namespace Btsx
         private void DoStatus(string message, bool progress, StatusType type)
         {
             bool send = false;
+            var prog = totalMessages > 0 
+                ? (int)((decimal)completedMessages / (decimal)totalMessages * 100m)
+                : 0;
             if (progress)
             {
                 if (totalMessages > 0)
                 {
-                    var prog = (int)((decimal)completedMessages / (decimal)totalMessages * 100m);
                     if (prog != this.progress)
                     {
                         send = true;
@@ -284,6 +286,7 @@ namespace Btsx
             }
             else
             {
+                this.progress = prog;
                 send = true;
             }
 
@@ -397,6 +400,8 @@ namespace Btsx
 
             if (FoldersOnly)
             {
+                completedMessages += srcFolder.Count;
+                DoStatus($"Processed {dstFolder.FullName}", false, StatusType.Info);
                 await srcFolder.CloseAsync(false, cancellationToken);
                 return;
             }

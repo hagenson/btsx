@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "Data Migration Web UI",
   "scripts": {
-    "build": "webpack --mode production",
-    "dev": "webpack --mode development --watch"
+    "build": "webpack --mode development",
+    "build-dev": "webpack --mode development",
+    "build-prd": "webpack --mode production"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{31feff8e-54f2-4281-97c4-b38bf8b68e82}</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <ProjectView>ShowAllFiles</ProjectView>
+    <StartupFile>build.js</StartupFile>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{3AF33F2E-1136-4D97-BBB7-1795711AC8B8};{349c5851-65df-11da-9384-00065b846f21};{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}</ProjectTypeGuids>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">17.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+    <ScriptArguments>
+    </ScriptArguments>
+    <StartWebBrowser>False</StartWebBrowser>
+    <SaveNodeJsSettingsInProjectFile>False</SaveNodeJsSettingsInProjectFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <ItemGroup>
+    <Folder Include="archetypes\" />
+    <Folder Include="config\_default\" />
+    <Folder Include="content-incl\" />
+    <Folder Include="content-incl\0100-web\" />
+    <Folder Include="content-incl\0100-web\10-start\" />
+    <Folder Include="content-incl\0100-web\10-start\screenshots\" />
+    <Folder Include="content-incl\0100-web\20-status\" />
+    <Folder Include="content-incl\0100-web\20-status\screenshots\" />
+    <Folder Include="content-incl\0200-cli\" />
+    <Folder Include="content-incl\0300-installation\" />
+    <Folder Include="content\" />
+    <Folder Include="config\" />
+    <Folder Include="content-incl\0000-home\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include=".gitignore" />
+    <Content Include="archetypes\default.md" />
+    <Content Include="build.js" />
+    <Content Include="config\_default\module.toml" />
+    <Content Include="content-incl\0100-web\10-start\_index.md" />
+    <Content Include="content-incl\0100-web\20-status\screenshots\migration-complete.png" />
+    <Content Include="content-incl\0100-web\20-status\screenshots\status-cancel.png" />
+    <Content Include="content-incl\0100-web\20-status\screenshots\status-complete-cancel.png" />
+    <Content Include="content-incl\0100-web\20-status\screenshots\status-delete.png" />
+    <Content Include="content-incl\0100-web\20-status\screenshots\status-start.png" />
+    <Content Include="content-incl\0100-web\20-status\_index.md" />
+    <Content Include="content-incl\0100-web\10-start\screenshots\gmail-auth-success.png" />
+    <Content Include="content-incl\0100-web\10-start\screenshots\gmail-details.png" />
+    <Content Include="content-incl\0100-web\10-start\screenshots\imap-auth-success.png" />
+    <Content Include="content-incl\0100-web\10-start\screenshots\imap-details.png" />
+    <Content Include="content-incl\0100-web\10-start\screenshots\migration-options.png" />
+    <Content Include="content-incl\0100-web\10-start\screenshots\peak-toggle.png" />
+    <Content Include="content-incl\0100-web\10-start\screenshots\start-button.png" />
+    <Content Include="content-incl\0100-web\10-start\screenshots\start.png" />
+    <Content Include="content-incl\0100-web\_index.md" />
+    <Content Include="content-incl\0200-cli\10-parameters.md" />
+    <Content Include="content-incl\0200-cli\_index.md" />
+    <Content Include="content-incl\0300-installation\20-kubernetes.md" />
+    <Content Include="content-incl\0300-installation\10-local.md" />
+    <Content Include="content-incl\0300-installation\_index.md" />
+    <Content Include="content-incl\0000-home\_index.md" />
+    <Content Include="hugo.toml" />
+    <Content Include="README.md" />
+    <Content Include="setup-theme.ps1" />
+    <Content Include="setup-theme.sh" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
+        <WebProjectProperties>
+          <UseIIS>False</UseIIS>
+          <AutoAssignPort>True</AutoAssignPort>
+          <DevelopmentServerPort>0</DevelopmentServerPort>
+          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <IISUrl>http://localhost:48022/</IISUrl>
+          <NTLMAuthentication>False</NTLMAuthentication>
+          <UseCustomServer>True</UseCustomServer>
+          <CustomServerUrl>http://localhost:1337</CustomServerUrl>
+          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
+        </WebProjectProperties>
+      </FlavorProperties>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}" User="">
+        <WebProjectProperties>
+          <StartPageUrl>
+          </StartPageUrl>
+          <StartAction>CurrentPage</StartAction>
+          <AspNetDebugging>True</AspNetDebugging>
+          <SilverlightDebugging>False</SilverlightDebugging>
+          <NativeDebugging>False</NativeDebugging>
+          <SQLDebugging>False</SQLDebugging>
+          <ExternalProgram>
+          </ExternalProgram>
+          <StartExternalURL>
+          </StartExternalURL>
+          <StartCmdLineArguments>
+          </StartCmdLineArguments>
+          <StartWorkingDirectory>
+          </StartWorkingDirectory>
+          <EnableENC>False</EnableENC>
+          <AlwaysStartWebServerOnDebug>False</AlwaysStartWebServerOnDebug>
+        </WebProjectProperties>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+  <Target Name="NpmInstall" BeforeTargets="Build">
+    <Exec Command="npm install --no-color" />
+  </Target>
+  <Target Name="HugoBuild" AfterTargets="Build">
+    <Exec Command="npm run build" />
+  </Target>
+</Project>

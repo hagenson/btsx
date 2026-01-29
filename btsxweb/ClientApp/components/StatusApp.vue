@@ -194,9 +194,9 @@
 
     onMounted(async () => {
         props.connection.on("StatusUpdate", (job: JobInfo) => {
-            if (job.progressUpdates && job.progress > 0) {
+            if (job.progressUpdates) {
                 showProgressBar.value = true;
-                progress.value = job.progress;
+                progress.value = job.progress ?? 1;
             }
 
             const messageColor = job.statusType === "Error" ? "text-danger" :

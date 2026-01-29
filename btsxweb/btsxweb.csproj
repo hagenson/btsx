@@ -15,9 +15,14 @@
     <Exec Command="npm install" WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 
-  <Target Name="NpmBuild" AfterTargets="Build">
-    <Message Text="Building frontend with npm..." Importance="high" />
-    <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  <Target Name="NpmBuildDebug" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+    <Message Text="Building frontend with npm - no minimisation..." Importance="high" />
+    <Exec Command="npm run build-dev" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+
+  <Target Name="NpmBuildRelease" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+	<Message Text="Building frontend with npm..." Importance="high" />
+	<Exec Command="npm run build-prd" WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 
   <ItemGroup>

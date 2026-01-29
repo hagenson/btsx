@@ -1,0 +1,17 @@
+############ Content includes ############
+[[mounts]]
+  source = "content-incl/0300-installation"
+  target = "content/docs/installation"
+
+[[mounts]]
+  source = "content-incl/0200-cli"
+  target = "content/docs/cli"
+
+[[mounts]]
+  source = "content-incl/0100-web"
+  target = "content/docs/web"
+
+[[mounts]]
+  source = "content-incl/0000-home"
+  target = "content/docs/home"
+

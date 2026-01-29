@@ -1,16 +1,14 @@
 baseURL = '/help/'
-languageCode = 'en-us'
+languageCode = 'en-NZ'
 title = 'BTSX Help Documentation'
 theme = 'hugo-book'
 
 [params]
-  BookRepo = 'https://github.com/fhagenson/btsx'
-  BookEditPath = 'edit/main/docs/content'
+  BookRepo = 'https://github.com/hagenson/btsx'
   BookSearch = true
   BookComments = false
   BookToC = true
-  BookMenuBundle = '/menu'
-  BookSection = '/'
+  BookSection = '/docs'
 
 [markup]
   [markup.goldmark]
@@ -22,8 +20,11 @@ theme = 'hugo-book'
     startLevel = 2
 
 [menu]
-  [[menu.before]]
+  [[menu.after]]
     identifier = "github"
     name = "GitHub"
-    url = "https://github.com/fhagenson/btsx"
+    url = "https://github.com/hagenson/btsx"
     weight = 10
+
+[permalinks]
+  docs = "/:sections[1:]/:slug/"

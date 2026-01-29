@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.2752196">
+  <PropertyGroup>
+    <!--Command to run on project build-->
+    <BuildCommand>build</BuildCommand>
+    <!--Command to run on project clean-->
+    <CleanCommand>clean</CleanCommand>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove=".vscode\**" />
+    <None Remove="public\**" />
+    <TypeScriptConfiguration Remove=".vscode\**" />
+    <TypeScriptConfiguration Remove="public\**" />
+  </ItemGroup>
+</Project>

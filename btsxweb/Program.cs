@@ -40,10 +40,16 @@ app.UseStaticFiles();
 var hugoPublicPath = Path.Combine(app.Environment.ContentRootPath, "..", "docs", "public");
 if (Directory.Exists(hugoPublicPath))
 {
+    app.UseDefaultFiles(new DefaultFilesOptions()
+    {
+        FileProvider = new PhysicalFileProvider(hugoPublicPath),
+        RequestPath = new PathString("/help")
+    });
+
     app.UseStaticFiles(new StaticFileOptions
     {
         FileProvider = new PhysicalFileProvider(hugoPublicPath),
-        RequestPath = "/help"
+        RequestPath = "/help"        
     });
 }
 
