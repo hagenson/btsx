@@ -16,6 +16,8 @@ builder.Services.AddSingleton<JobPersistenceService>();
 builder.Services.AddSingleton<GoogleOAuthService>();
 builder.Services.AddSingleton<MailMoverService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<MailMoverService>());
+builder.Services.AddSingleton<ContactMoverService>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<ContactMoverService>());
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IStatusNotifier, NotifierProxy>();
 builder.Services.AddSingleton<Mapper>();
@@ -60,5 +62,6 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 app.MapHub<MigrationHub>("/migrationHub");
+app.MapHub<ContactHub>("/contactHub");
 
 app.Run();

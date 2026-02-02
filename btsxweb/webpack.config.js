@@ -5,7 +5,9 @@ module.exports = {
   entry: {
     index: './ClientApp/index.ts',
     status: './ClientApp/status.ts',
-    oauthCallback: './ClientApp/oauthCallback.ts'
+    oauthCallback: './ClientApp/oauthCallback.ts',
+    contacts: './ClientApp/contacts.ts',
+    contactStatus: './ClientApp/contactStatus.ts'
   },
   output: {
     path: path.resolve(__dirname, 'wwwroot/dist'),

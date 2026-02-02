@@ -1,7 +1,10 @@
 using btsxweb.Services;
 using BtsxWeb.Models;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
+using Google.Apis.Auth;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Auth.OAuth2.Flows;
+using GoogleAuthResponses = Google.Apis.Auth.OAuth2.Responses;
 
 namespace BtsxWeb.Services
 {
@@ -15,10 +18,8 @@ namespace BtsxWeb.Services
         /// </summary>
         public GoogleOAuthService(
             IOptions<GoogleOAuthSettings> googleOAuthSettings,
-            IHttpClientFactory httpClientFactory,
             ILogger<GoogleOAuthService> logger)
         {
-            this.httpClientFactory = httpClientFactory;
             this.logger = logger;
 
             clientId = googleOAuthSettings.Value.ClientId;
@@ -27,6 +28,16 @@ namespace BtsxWeb.Services
 
             if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) || string.IsNullOrEmpty(redirectUri))
                 throw new InvalidOperationException("Google OAuth is not configured properly");
+
+            flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
+            {
+                ClientSecrets = new ClientSecrets
+                {
+                    ClientId = clientId,
+                    ClientSecret = clientSecret
+                },
+                Scopes = new[] { "openid", "email", "https://mail.google.com/", "https://www.googleapis.com/auth/contacts.readonly" }
+            });
         }
 
         /// <summary>
@@ -37,24 +48,15 @@ namespace BtsxWeb.Services
         /// <returns>The account's email address.</returns>
         public async Task<string?> GetEmailForTokenAsync(string token, CancellationToken cancellationToken)
         {
-            using (var httpClient = httpClientFactory.CreateClient())
+            try
             {
-                var userInfoRequest = new HttpRequestMessage(HttpMethod.Get,
-                "https://www.googleapis.com/oauth2/v2/userinfo");
-                userInfoRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
-                    "Bearer", token);
-
-                var userInfoResponse = await httpClient.SendAsync(userInfoRequest);
-                if (!userInfoResponse.IsSuccessStatusCode)
-                {
-                    var errorContent = await userInfoResponse.Content.ReadAsStringAsync();
-                    logger.LogError("Get email request failed: {Error}", errorContent);
-                    throw new InvalidOperationException(errorContent);
-                }
-
-                var userInfoContent = await userInfoResponse.Content.ReadAsStringAsync();
-                var userInfo = JsonSerializer.Deserialize<UserInfoResponse>(userInfoContent);
-                return userInfo?.email;
+                var payload = await GoogleJsonWebSignature.ValidateAsync(token);
+                return payload.Email;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to validate token and get email");
+                throw new InvalidOperationException("Failed to validate token and get email", ex);
             }
         }
 
@@ -68,33 +70,32 @@ namespace BtsxWeb.Services
             string code,
             CancellationToken cancellationToken)
         {
-            using (var httpClient = httpClientFactory.CreateClient())
+            try
             {
-                var tokenRequest = new Dictionary<string, string>
-            {
-                { "code", code },
-                { "client_id", clientId },
-                { "client_secret", clientSecret },
-                { "redirect_uri", redirectUri ?? "" },
-                { "grant_type", "authorization_code" }
-            };
+                var tokenResponse = await flow.ExchangeCodeForTokenAsync(
+                    string.Empty,
+                    code,
+                    redirectUri,
+                    cancellationToken);
 
-                var response = await httpClient.PostAsync("https://oauth2.googleapis.com/token",
-                    new FormUrlEncodedContent(tokenRequest));
-
-                if (!response.IsSuccessStatusCode)
+                return new TokenResponse
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    logger.LogError("OAuth token exchange failed: {Error}", errorContent);
-                    throw new InvalidOperationException(errorContent);
-                }
-
-                var responseContent = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<TokenResponse>(responseContent);
-                if (result == null)
-                    throw new InvalidOperationException("token response could not be deserialised.");
-
-                return result;
+                    access_token = tokenResponse.AccessToken,
+                    expires_in = (int)(tokenResponse.ExpiresInSeconds ?? 0),
+                    refresh_token = tokenResponse.RefreshToken,
+                    scope = tokenResponse.Scope,
+                    token_type = tokenResponse.TokenType
+                };
+            }
+            catch (GoogleAuthResponses.TokenResponseException ex)
+            {
+                logger.LogError(ex, "OAuth token exchange failed: {Error}", ex.Error?.Error);
+                throw new InvalidOperationException($"OAuth token exchange failed: {ex.Error?.Error}", ex);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "OAuth token exchange failed");
+                throw new InvalidOperationException("OAuth token exchange failed", ex);
             }
         }
 
@@ -137,26 +138,9 @@ namespace BtsxWeb.Services
 
             try
             {
-                var httpClient = httpClientFactory.CreateClient();
-                var revokeRequest = new FormUrlEncodedContent(new Dictionary<string, string>
-                {
-                    { "token", token }
-                });
-
-                var response = await httpClient.PostAsync("https://oauth2.googleapis.com/revoke", revokeRequest);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    logger.LogInformation("Successfully revoked OAuth token");
-                    return true;
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    logger.LogWarning("Failed to revoke OAuth token. Status: {StatusCode}, Error: {Error}",
-                        response.StatusCode, errorContent);
-                    return false;
-                }
+                await flow.RevokeTokenAsync(string.Empty, token, CancellationToken.None);
+                logger.LogInformation("Successfully revoked OAuth token");
+                return true;
             }
             catch (Exception ex)
             {
@@ -169,15 +153,10 @@ namespace BtsxWeb.Services
 
         private readonly string clientSecret;
 
-        private readonly IHttpClientFactory httpClientFactory;
+        private readonly GoogleAuthorizationCodeFlow flow;
 
         private readonly ILogger<GoogleOAuthService> logger;
 
         private readonly string redirectUri;
-
-        private class UserInfoResponse
-        {
-            public string? email { get; set; }
-        }
     }
 }

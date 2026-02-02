@@ -1,0 +1,13 @@
+@page "{id}"
+@model ContactStatusModel
+@{
+    ViewData["Title"] = "Contact Status";
+}
+
+<input type="hidden" id="jobId" value="@Model.Id" />
+<div id="app"></div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script src="~/dist/contactStatus.js" asp-append-version="true"></script>
+}
