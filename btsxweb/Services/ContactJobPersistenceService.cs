@@ -15,8 +15,7 @@ namespace BtsxWeb.Services
         public ContactJobPersistenceService(
             ILogger<ContactJobPersistenceService> logger,
             IOptions<PersistenceSettings> persistenceSettings,
-            EncryptionService encryptionService,
-            IWebHostEnvironment env)
+            EncryptionService encryptionService)
         {
             this.logger = logger;
             this.encryptionService = encryptionService;

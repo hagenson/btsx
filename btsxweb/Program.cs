@@ -17,6 +17,8 @@ builder.Services.AddSingleton<GoogleOAuthService>();
 builder.Services.AddSingleton<MailMoverService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<MailMoverService>());
 builder.Services.AddSingleton<ContactMoverService>();
+builder.Services.AddSingleton<ContactMapper>();
+builder.Services.AddSingleton<ContactJobPersistenceService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<ContactMoverService>());
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IStatusNotifier, NotifierProxy>();

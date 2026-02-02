@@ -56,7 +56,7 @@ public class ContactsModel : PageModel
 
         try
         {
-            var success = await MailMover.TestAuthenticationAsync(creds, HttpContext.RequestAborted);
+            var success = await ContactMover.TestAuthenticationAsync(creds, HttpContext.RequestAborted);
             if (success)
             {
                 return new JsonResult(new { success = true, message = "Authentication successful" });
