@@ -1,4 +1,4 @@
-﻿namespace btsxweb.Services
+﻿namespace Btsxweb.Services
 {
     /// <summary>
     /// C# binding for a token request response.
@@ -29,5 +29,7 @@
         /// Type of token.
         /// </summary>
         public string? token_type { get; set; }
+
+        public string? user_id { get; set; }
     }
 }

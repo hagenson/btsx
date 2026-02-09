@@ -8,20 +8,19 @@ namespace Btsx
     /// <summary>
     /// Service for fetching Google contacts using OAuth token authentication.
     /// </summary>
-    public class GoogleContactsService
+    public class GoogleContactsService: IContactService
     {
         private readonly string oauthToken;
 
         /// <summary>
         /// Initializes a new instance of the GoogleContactsService.
         /// </summary>
-        /// <param name="oauthToken">OAuth access token for authentication.</param>
-        public GoogleContactsService(string oauthToken)
+        public GoogleContactsService(Creds creds)
         {
-            if (string.IsNullOrWhiteSpace(oauthToken))
+            if (string.IsNullOrWhiteSpace(creds.OAuthToken))
                 throw new ArgumentException("OAuth token cannot be null or empty", nameof(oauthToken));
 
-            this.oauthToken = oauthToken;
+            this.oauthToken = creds.OAuthToken;
         }
 
         /// <summary>
@@ -29,7 +28,7 @@ namespace Btsx
         /// </summary>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>List of contacts with their vCard data.</returns>
-        public async Task<List<ContactData>> FetchContactsAsync(CancellationToken cancellationToken = default)
+        public async Task<List<ContactData>> ListContactsAsync(CancellationToken cancellationToken = default)
         {
             var contacts = new List<ContactData>();
             
@@ -82,7 +81,7 @@ namespace Btsx
         /// <param name="progressCallback">Callback for progress updates.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>List of contacts with their vCard data.</returns>
-        public async Task<List<ContactData>> FetchContactsAsync(
+        public async Task<List<ContactData>> ListContactsAsync(
             Action<int, string>? progressCallback,
             CancellationToken cancellationToken = default)
         {
@@ -272,6 +271,21 @@ namespace Btsx
                 .Replace(";", "\\;")
                 .Replace("\n", "\\n")
                 .Replace("\r", string.Empty);
+        }
+
+        public Task<bool> TestConnectionAsync(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+        
+        public Task<bool> ContactExistsAsync(string filename, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> UploadContactAsync(string vcard, string filename, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 

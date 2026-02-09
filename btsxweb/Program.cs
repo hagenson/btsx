@@ -22,6 +22,7 @@ builder.Services.AddSingleton<ContactJobPersistenceService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<ContactMoverService>());
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IStatusNotifier, NotifierProxy>();
+builder.Services.AddScoped<IContactStatusNotifier, ContactNotifierProxy>();
 builder.Services.AddSingleton<Mapper>();
 builder.Services.AddHttpClient();
 builder.Services.AddSession(options =>

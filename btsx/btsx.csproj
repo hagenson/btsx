@@ -4,12 +4,14 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>Btsx</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Google.Apis.Auth" Version="1.69.0" />
     <PackageReference Include="Google.Apis.PeopleService.v1" Version="1.68.0.3544" />
     <PackageReference Include="MailKit" Version="4.14.1" />
+    <PackageReference Include="NextcloudApi" Version="1.0.18" />
   </ItemGroup>
 
 </Project>

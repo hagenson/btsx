@@ -58,7 +58,7 @@ public class OAuthCallbackModel : PageModel
             }
 
             // Get user's email from Google
-            Email = await googleOAuth.GetEmailForTokenAsync(tokenResponse.access_token, cancellationToken);
+            Email = tokenResponse.user_id;
 
             Success = true;
             Token = tokenResponse.access_token;

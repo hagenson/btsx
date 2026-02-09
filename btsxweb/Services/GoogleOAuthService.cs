@@ -1,9 +1,12 @@
-using btsxweb.Services;
+using Btsxweb.Services;
 using BtsxWeb.Models;
-using Microsoft.Extensions.Options;
 using Google.Apis.Auth;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
+using Google.Apis.Oauth2.v2;
+using Google.Apis.Services;
+using Microsoft.Extensions.Options;
+using System.Net;
 using GoogleAuthResponses = Google.Apis.Auth.OAuth2.Responses;
 
 namespace BtsxWeb.Services
@@ -35,31 +38,11 @@ namespace BtsxWeb.Services
                 {
                     ClientId = clientId,
                     ClientSecret = clientSecret
-                },
-                Scopes = new[] { "openid", "email", "https://mail.google.com/", "https://www.googleapis.com/auth/contacts.readonly" }
+                },                
+                Scopes = new[] { "openid", "email", "https://mail.google.com/", "https://www.googleapis.com/auth/contacts" }
             });
         }
-
-        /// <summary>
-        /// Gets the email address for the account that created the access token.
-        /// </summary>
-        /// <param name="token">OAuth access token to get the email address for.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>The account's email address.</returns>
-        public async Task<string?> GetEmailForTokenAsync(string token, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var payload = await GoogleJsonWebSignature.ValidateAsync(token);
-                return payload.Email;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to validate token and get email");
-                throw new InvalidOperationException("Failed to validate token and get email", ex);
-            }
-        }
-
+        
         /// <summary>
         /// Requests an OAuth token from the google API.
         /// </summary>
@@ -78,13 +61,25 @@ namespace BtsxWeb.Services
                     redirectUri,
                     cancellationToken);
 
+                var credential = new UserCredential(flow, string.Empty, tokenResponse);
+
+                // Use Google's Oauth2 API to request the userinfo (which includes email when scope includes 'email' or 'openid')
+                using var oauth2 = new Oauth2Service(new BaseClientService.Initializer
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "BtsxWeb"
+                });
+
+                var userInfo = await oauth2.Userinfo.Get().ExecuteAsync(cancellationToken);
+
                 return new TokenResponse
                 {
                     access_token = tokenResponse.AccessToken,
                     expires_in = (int)(tokenResponse.ExpiresInSeconds ?? 0),
                     refresh_token = tokenResponse.RefreshToken,
                     scope = tokenResponse.Scope,
-                    token_type = tokenResponse.TokenType
+                    token_type = tokenResponse.TokenType,
+                    user_id = userInfo.Email,
                 };
             }
             catch (GoogleAuthResponses.TokenResponseException ex)

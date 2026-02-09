@@ -3,7 +3,7 @@ import * as signalR from '@microsoft/signalr';
 import ContactsApp from './components/ContactsApp.vue';
 
 const connection = new signalR.HubConnectionBuilder()
-    .withUrl("/migrationHub")
+    .withUrl("/contactHub")
     .withAutomaticReconnect()
     .build();
 

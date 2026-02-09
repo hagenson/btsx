@@ -7,31 +7,23 @@ namespace Btsx
     /// <summary>
     /// Service for uploading contacts to NextCloud using CardDAV protocol.
     /// </summary>
-    public class NextCloudContactsService
+    public class NextCloudContactsService : IContactService
     {
-        private readonly HttpClient httpClient;
-        private readonly string username;
-        private readonly string password;
-        private readonly string baseUrl;
-
         /// <summary>
         /// Initializes a new instance of the NextCloudContactsService.
         /// </summary>
-        /// <param name="serverUrl">NextCloud server URL (e.g., https://cloud.example.com).</param>
-        /// <param name="username">NextCloud username.</param>
-        /// <param name="password">NextCloud password or app password.</param>
-        public NextCloudContactsService(string serverUrl, string username, string password)
+        public NextCloudContactsService(Creds creds)
         {
-            if (string.IsNullOrWhiteSpace(serverUrl))
-                throw new ArgumentException("Server URL cannot be null or empty", nameof(serverUrl));
-            if (string.IsNullOrWhiteSpace(username))
-                throw new ArgumentException("Username cannot be null or empty", nameof(username));
-            if (string.IsNullOrWhiteSpace(password))
-                throw new ArgumentException("Password cannot be null or empty", nameof(password));
+            if (string.IsNullOrWhiteSpace(creds.Server))
+                throw new ArgumentException("Server URL cannot be null or empty", nameof(creds.Server));
+            if (string.IsNullOrWhiteSpace(creds.User))
+                throw new ArgumentException("Username cannot be null or empty", nameof(creds.User));
+            if (string.IsNullOrWhiteSpace(creds.Password))
+                throw new ArgumentException("Password cannot be null or empty", nameof(creds.Password));
 
-            this.username = username;
-            this.password = password;
-            this.baseUrl = $"{serverUrl.TrimEnd('/')}/remote.php/dav/addressbooks/users/{username}/contacts/";
+            this.username = creds.User;
+            this.password = creds.Password;
+            this.baseUrl = $"{creds.Server.TrimEnd('/')}/remote.php/dav/addressbooks/users/{username}/contacts/";
 
             httpClient = new HttpClient();
             var authBytes = Encoding.UTF8.GetBytes($"{username}:{password}");
@@ -65,6 +57,127 @@ namespace Btsx
             var authBytes = Encoding.UTF8.GetBytes($"{username}:{password}");
             var authHeader = Convert.ToBase64String(authBytes);
             this.httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authHeader);
+        }
+
+        /// <summary>
+        /// Checks if a contact already exists on the server using PROPFIND.
+        /// </summary>
+        /// <param name="filename">Filename to check.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>True if the contact exists.</returns>
+        public async Task<bool> ContactExistsAsync(string filename, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(filename))
+                throw new ArgumentException("Filename cannot be null or empty", nameof(filename));
+
+            if (!filename.EndsWith(".vcf", StringComparison.OrdinalIgnoreCase))
+                filename += ".vcf";
+
+            var url = $"{baseUrl}{filename}";
+
+            try
+            {
+                var request = new HttpRequestMessage(new HttpMethod("PROPFIND"), url);
+                request.Headers.Add("Depth", "0");
+                request.Content = new StringContent(
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                    "<d:propfind xmlns:d=\"DAV:\">" +
+                    "<d:prop><d:getetag /></d:prop>" +
+                    "</d:propfind>",
+                    Encoding.UTF8,
+                    "application/xml");
+
+                var response = await httpClient.SendAsync(request, cancellationToken);
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Deletes a contact from the server.
+        /// </summary>
+        /// <param name="filename">Filename of the contact to delete.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>True if deletion was successful.</returns>
+        public async Task<bool> DeleteContactAsync(string filename, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(filename))
+                throw new ArgumentException("Filename cannot be null or empty", nameof(filename));
+
+            if (!filename.EndsWith(".vcf", StringComparison.OrdinalIgnoreCase))
+                filename += ".vcf";
+
+            var url = $"{baseUrl}{filename}";
+
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Delete, url);
+                var response = await httpClient.SendAsync(request, cancellationToken);
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Disposes the HttpClient if it was created by this instance.
+        /// </summary>
+        public void Dispose()
+        {
+            httpClient?.Dispose();
+        }
+
+        /// <summary>
+        /// Lists all contacts in the addressbook using PROPFIND.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>List of contact filenames.</returns>
+        public async Task<List<ContactData>> ListContactsAsync(CancellationToken cancellationToken = default)
+        {
+            var contacts = new List<string>();
+
+            try
+            {
+                var request = new HttpRequestMessage(new HttpMethod("PROPFIND"), baseUrl);
+                request.Headers.Add("Depth", "1");
+                request.Content = new StringContent(
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                    "<d:propfind xmlns:d=\"DAV:\">" +
+                    "<d:prop><d:resourcetype /></d:prop>" +
+                    "</d:propfind>",
+                    Encoding.UTF8,
+                    "application/xml");
+
+                var response = await httpClient.SendAsync(request, cancellationToken);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                    var xml = XDocument.Parse(content);
+                    XNamespace d = "DAV:";
+
+                    foreach (var responseElement in xml.Descendants(d + "response"))
+                    {
+                        var href = responseElement.Element(d + "href")?.Value;
+                        if (!string.IsNullOrEmpty(href) && href.EndsWith(".vcf", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var filename = Path.GetFileName(href);
+                            contacts.Add(filename);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Return empty list on error
+            }
+
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -177,125 +290,16 @@ namespace Btsx
                 }
             }
 
-            progressCallback?.Invoke(result.Successful, result.Total, 
+            progressCallback?.Invoke(result.Successful, result.Total,
                 $"Upload complete: {result.Successful} successful, {result.Failed} failed");
 
             return result;
         }
 
-        /// <summary>
-        /// Checks if a contact already exists on the server using PROPFIND.
-        /// </summary>
-        /// <param name="filename">Filename to check.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if the contact exists.</returns>
-        public async Task<bool> ContactExistsAsync(string filename, CancellationToken cancellationToken = default)
-        {
-            if (string.IsNullOrWhiteSpace(filename))
-                throw new ArgumentException("Filename cannot be null or empty", nameof(filename));
-
-            if (!filename.EndsWith(".vcf", StringComparison.OrdinalIgnoreCase))
-                filename += ".vcf";
-
-            var url = $"{baseUrl}{filename}";
-
-            try
-            {
-                var request = new HttpRequestMessage(new HttpMethod("PROPFIND"), url);
-                request.Headers.Add("Depth", "0");
-                request.Content = new StringContent(
-                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                    "<d:propfind xmlns:d=\"DAV:\">" +
-                    "<d:prop><d:getetag /></d:prop>" +
-                    "</d:propfind>",
-                    Encoding.UTF8,
-                    "application/xml");
-
-                var response = await httpClient.SendAsync(request, cancellationToken);
-                return response.IsSuccessStatusCode;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Lists all contacts in the addressbook using PROPFIND.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>List of contact filenames.</returns>
-        public async Task<List<string>> ListContactsAsync(CancellationToken cancellationToken = default)
-        {
-            var contacts = new List<string>();
-
-            try
-            {
-                var request = new HttpRequestMessage(new HttpMethod("PROPFIND"), baseUrl);
-                request.Headers.Add("Depth", "1");
-                request.Content = new StringContent(
-                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                    "<d:propfind xmlns:d=\"DAV:\">" +
-                    "<d:prop><d:resourcetype /></d:prop>" +
-                    "</d:propfind>",
-                    Encoding.UTF8,
-                    "application/xml");
-
-                var response = await httpClient.SendAsync(request, cancellationToken);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                    var xml = XDocument.Parse(content);
-                    XNamespace d = "DAV:";
-
-                    foreach (var responseElement in xml.Descendants(d + "response"))
-                    {
-                        var href = responseElement.Element(d + "href")?.Value;
-                        if (!string.IsNullOrEmpty(href) && href.EndsWith(".vcf", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var filename = Path.GetFileName(href);
-                            contacts.Add(filename);
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Return empty list on error
-            }
-
-            return contacts;
-        }
-
-        /// <summary>
-        /// Deletes a contact from the server.
-        /// </summary>
-        /// <param name="filename">Filename of the contact to delete.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if deletion was successful.</returns>
-        public async Task<bool> DeleteContactAsync(string filename, CancellationToken cancellationToken = default)
-        {
-            if (string.IsNullOrWhiteSpace(filename))
-                throw new ArgumentException("Filename cannot be null or empty", nameof(filename));
-
-            if (!filename.EndsWith(".vcf", StringComparison.OrdinalIgnoreCase))
-                filename += ".vcf";
-
-            var url = $"{baseUrl}{filename}";
-
-            try
-            {
-                var request = new HttpRequestMessage(HttpMethod.Delete, url);
-                var response = await httpClient.SendAsync(request, cancellationToken);
-                return response.IsSuccessStatusCode;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
+        private readonly string baseUrl;
+        private readonly HttpClient httpClient;
+        private readonly string password;
+        private readonly string username;
         /// <summary>
         /// Generates a unique filename for a contact.
         /// </summary>
@@ -304,20 +308,20 @@ namespace Btsx
         private string GenerateFilename(ContactData contact)
         {
             var id = contact.ResourceName?.Replace("/", "-").Replace("\\", "-") ?? Guid.NewGuid().ToString();
-            
+
             if (contact.Person?.Names != null && contact.Person.Names.Count > 0)
             {
                 var name = contact.Person.Names[0];
-                var displayName = name.DisplayName ?? 
+                var displayName = name.DisplayName ??
                     $"{name.GivenName} {name.FamilyName}".Trim();
-                
+
                 if (!string.IsNullOrWhiteSpace(displayName))
                 {
                     var safeName = string.Join("", displayName
                         .Replace(" ", "-")
                         .Where(c => char.IsLetterOrDigit(c) || c == '-'))
                         .ToLowerInvariant();
-                    
+
                     if (!string.IsNullOrEmpty(safeName))
                     {
                         id = $"{safeName}-{Guid.NewGuid():N}";
@@ -327,14 +331,6 @@ namespace Btsx
 
             return $"{id}.vcf";
         }
-
-        /// <summary>
-        /// Disposes the HttpClient if it was created by this instance.
-        /// </summary>
-        public void Dispose()
-        {
-            httpClient?.Dispose();
-        }
     }
 
     /// <summary>
@@ -342,16 +338,6 @@ namespace Btsx
     /// </summary>
     public class UploadResult
     {
-        /// <summary>
-        /// Total number of contacts processed.
-        /// </summary>
-        public int Total { get; set; }
-
-        /// <summary>
-        /// Number of contacts successfully uploaded.
-        /// </summary>
-        public int Successful { get; set; }
-
         /// <summary>
         /// Number of contacts that failed to upload.
         /// </summary>
@@ -361,5 +347,15 @@ namespace Btsx
         /// List of failed contacts with error messages.
         /// </summary>
         public List<(string ContactId, string Error)> FailedContacts { get; set; } = new();
+
+        /// <summary>
+        /// Number of contacts successfully uploaded.
+        /// </summary>
+        public int Successful { get; set; }
+
+        /// <summary>
+        /// Total number of contacts processed.
+        /// </summary>
+        public int Total { get; set; }
     }
 }

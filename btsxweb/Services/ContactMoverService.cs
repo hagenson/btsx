@@ -16,14 +16,13 @@ namespace BtsxWeb.Services
             IServiceScopeFactory scopeFactory,
             ContactMapper mapper,
             ILogger<ContactMoverService> logger,
-            ContactJobPersistenceService persistenceService,
-            GoogleOAuthService tokenRevocationService)
+            ContactJobPersistenceService persistenceService
+            )
         {
             this.scopeFactory = scopeFactory;
             this.mapper = mapper;
             this.logger = logger;
             this.persistenceService = persistenceService;
-            this.tokenRevocationService = tokenRevocationService;
         }
 
         /// <summary>
@@ -332,114 +331,38 @@ namespace BtsxWeb.Services
                     job.StatusType = "Info";
                     await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
 
-                    List<ContactData> contacts;
-                    
-                    if (job.Request.SourceServiceType.Equals("google", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (string.IsNullOrWhiteSpace(job.Request.SourceOAuthToken))
+                    var mover = new ContactMover();
+                    mover.SourceCredentials = 
+                        new Creds
                         {
-                            throw new InvalidOperationException("Source OAuth token is required for Google contacts");
-                        }
-
-                        var googleService = new GoogleContactsService(job.Request.SourceOAuthToken);
-                        
-                        job.Status = "Fetching contacts from Google...";
-                        await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
-
-                        contacts = await googleService.FetchContactsAsync(
-                            (count, message) =>
-                            {
-                                job.Status = message;
-                                _ = notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
-                            },
-                            job.CancellationTokenSource.Token);
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Unsupported source service type: {job.Request.SourceServiceType}");
-                    }
-
-                    if (job.CancellationTokenSource.Token.IsCancellationRequested)
-                    {
-                        await RevokeOAuthTokensAsync(job, notifier);
-                        job.Status = "Cancelled by user";
-                        job.StatusType = "Warning";
-                        job.EndTime = DateTime.UtcNow;
-                        job.IsCompleted = true;
-                        await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
-                        return;
-                    }
-
-                    job.Status = $"Fetched {contacts.Count} contacts";
-                    await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
-
-                    if (job.Request.DestServiceType.Equals("nextcloud", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var nextCloudService = new NextCloudContactsService(
-                            job.Request.DestServer,
-                            job.Request.DestUser,
-                            job.Request.DestPassword);
-
-                        job.Status = "Testing NextCloud connection...";
-                        await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
-
-                        var connected = await nextCloudService.TestConnectionAsync(job.CancellationTokenSource.Token);
-                        if (!connected)
-                        {
-                            throw new InvalidOperationException("Failed to connect to NextCloud server");
-                        }
-
-                        job.Status = "Uploading contacts to NextCloud...";
-                        await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
-
-                        var result = await nextCloudService.UploadContactsAsync(
-                            contacts,
-                            (current, total, message) =>
-                            {
-                                job.Status = message;
-                                if (job.Request.ProgressUpdates && total > 0)
-                                {
-                                    job.Progress = (int)((decimal)current / total * 100);
-                                }
-                                _ = notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
-                            },
-                            job.CancellationTokenSource.Token);
-
-                        var stats = new MigrationStats
-                        {
-                            TotalMessages = result.Total,
-                            SuccessfulMessages = result.Successful,
-                            FailedMessages = result.Failed,
-                            SkippedMessages = 0
+                            Implementor = job.Request.SourceServiceType,
+                            OAuthToken = job.Request.SourceOAuthToken,
+                            Password = job.Request.SourcePassword,
+                            Server = job.Request.SourceServer,
+                            UseOAuth = job.Request.SourceUseOAuth,
+                            User = job.Request.SourceUser
                         };
 
-                        job.Statistics = stats;
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Unsupported destination service type: {job.Request.DestServiceType}");
-                    }
+                    mover.DestCredentials = 
+                        new Creds
+                        {
+                            Implementor = job.Request.DestServiceType,
+                            OAuthToken = job.Request.DestOAuthToken,
+                            Password = job.Request.DestPassword,
+                            Server = job.Request.DestServer,
+                            UseOAuth = job.Request.DestUseOAuth,
+                            User = job.Request.DestUser
+                        };
 
-                    if (job.CancellationTokenSource.Token.IsCancellationRequested)
+                    mover.StatusUpdate += async (sender, args) =>
                     {
-                        await RevokeOAuthTokensAsync(job, notifier);
-
-                        job.Status = "Cancelled by user";
-                        job.StatusType = "Warning";
-                        job.EndTime = DateTime.UtcNow;
-                        job.IsCompleted = true;
+                        job.Status = args.Status ?? "";
+                        job.Progress = args.Percentage;
                         await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
-                    }
-                    else
-                    {
-                        await RevokeOAuthTokensAsync(job, notifier);
 
-                        job.Status = "Completed";
-                        job.Progress = 100;
-                        job.EndTime = DateTime.UtcNow;
-                        job.IsCompleted = true;
-                        await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
-                    }
+                    };
+
+                    await mover.ExecuteAsync(stoppingCts.Token);
                 }
                 catch (Exception ex)
                 {
@@ -457,6 +380,11 @@ namespace BtsxWeb.Services
                     await persistenceService.SaveJobAsync(job);
                 }
             }
+        }
+
+        private void Mover_StatusUpdate(object sender, StatusEventArgs e)
+        {
+            throw new NotImplementedException();
         }
     }
 }

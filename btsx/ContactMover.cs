@@ -1,6 +1,3 @@
-using MailKit;
-using MailKit.Net.Imap;
-
 namespace Btsx
 {
     /// <summary>
@@ -49,23 +46,22 @@ namespace Btsx
         /// <param name="creds">Account credentials to test.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>True if the account was authenticated successfully.</returns>
-        public static async Task<bool> TestAuthenticationAsync(Creds creds, CancellationToken cancellationToken = default)
+        public static Task<bool> TestAuthenticationAsync(
+            Creds creds,
+            CancellationToken cancellationToken = default)
         {
             try
             {
-                using (var client = new ImapClient())
-                {
-                    await ConnectHost(client, creds, cancellationToken);
-                    await client.DisconnectAsync(true, cancellationToken);
-                    return true;
-                }
+                IContactService service = ContactServiceFactory.CreateContactService(creds);
+                return service.TestConnectionAsync(cancellationToken);
             }
             catch
             {
-                return false;
+                return Task.FromResult(false);
             }
         }
 
+        
         /// <summary>
         /// Runs the configured contact transfer job.
         /// </summary>
@@ -82,37 +78,37 @@ namespace Btsx
             completedContacts = 0;
             progress = 0;
 
-            using (var srcHost = new ImapClient())
-            using (var dstHost = new ImapClient())
+            var source = ContactServiceFactory.CreateContactService(SourceCredentials);
+            var dest = ContactServiceFactory.CreateContactService(DestCredentials);
+
+            DoStatus($"Listing contacts from {SourceCredentials.Server}...", false, StatusType.Info);
+            var contacts = await source.ListContactsAsync(cancellationToken);
+            totalContacts = contacts.Count;
+            var stats = new MigrationStats
             {
-                DoStatus($"Connecting to source: {SourceCredentials.Server}...", false, StatusType.Info);
-                await ConnectHost(srcHost, SourceCredentials, cancellationToken);
+                TotalMessages = totalContacts,
+            };
+            foreach (var contact in contacts)
+            {
                 if (cancellationToken.IsCancellationRequested)
                     return;
-
-                try
+                DoStatus($"Moving {contact.ResourceName}...", true, StatusType.Info);
+                if (await dest.ContactExistsAsync(contact.ResourceName, cancellationToken))
                 {
-                    DoStatus("Connected to source server", false, StatusType.Info);
-
-                    DoStatus($"Connecting to destination: {DestCredentials.Server}...", false, StatusType.Info);
-                    await ConnectHost(dstHost, DestCredentials, cancellationToken);
-                    if (cancellationToken.IsCancellationRequested)
-                        return;
-                    DoStatus("Connected to destination server", false, StatusType.Info);
-
-                    var stats = new MigrationStats();
-
-                    DoStatus("Transfer complete.", true, StatusType.Info);
-                    Statistics = stats;
+                    DoStatus($"{contact.ResourceName} already exists. Skipping.", true, StatusType.Info);
+                    stats.SkippedMessages++;
                 }
-                finally
+                else
                 {
-                    if (srcHost.IsConnected)
-                        await srcHost.DisconnectAsync(true, CancellationToken.None);
-                    if (dstHost.IsConnected)
-                        await dstHost.DisconnectAsync(true, CancellationToken.None);
+                    await dest.UploadContactAsync(contact.VCard, contact.ResourceName, cancellationToken);
+                    stats.SuccessfulMessages++;
                 }
+                completedContacts++;
             }
+
+            DoStatus("Transfer complete.", true, StatusType.Info);
+            Statistics = stats;
+            
         }
 
         /// <summary>
@@ -132,20 +128,6 @@ namespace Btsx
 
         private event StatusEvent? statusUpdate;
 
-        private static async Task ConnectHost(ImapClient host, Creds creds, CancellationToken cancellationToken)
-        {
-            await host.ConnectAsync(creds.Server, 993, true, cancellationToken);
-
-            if (creds.UseOAuth && !string.IsNullOrEmpty(creds.OAuthToken))
-            {
-                var oauth2 = new MailKit.Security.SaslMechanismOAuth2(creds.User, creds.OAuthToken);
-                await host.AuthenticateAsync(oauth2, cancellationToken);
-            }
-            else
-            {
-                await host.AuthenticateAsync(creds.User, creds.Password, cancellationToken);
-            }
-        }
 
         private void DoStatus(string message, bool progress, StatusType type)
         {

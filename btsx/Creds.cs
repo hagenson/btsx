@@ -29,5 +29,7 @@ namespace Btsx
         /// User name for the mail account.
         /// </summary>
         public string User { get; set; } = "";
+
+        public string? Implementor { get; set; }
     }
 }

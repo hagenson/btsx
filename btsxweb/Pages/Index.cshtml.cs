@@ -82,4 +82,5 @@ public class TestAuthRequest
     public string Password { get; set; } = "";
     public string Server { get; set; } = "";
     public string User { get; set; } = "";
+    public string? Implementor { get; set; }
 }

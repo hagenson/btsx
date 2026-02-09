@@ -33,7 +33,7 @@ public class ContactsModel : PageModel
         TempData["OAuthState"] = state;
         TempData["OAuthType"] = type;
 
-        var scope = Uri.EscapeDataString("https://mail.google.com/ https://www.googleapis.com/auth/userinfo.email");
+        var scope = Uri.EscapeDataString("https://www.googleapis.com/auth/contacts https://www.googleapis.com/auth/userinfo.email");
         var authUrl = $"https://accounts.google.com/o/oauth2/v2/auth?client_id={Uri.EscapeDataString(clientId)}&redirect_uri={Uri.EscapeDataString(redirectUri)}&response_type=code&scope={scope}&access_type=offline&prompt=consent&state={state}";
 
         return new JsonResult(new { authUrl });
@@ -51,7 +51,8 @@ public class ContactsModel : PageModel
             Server = request.Server,
             User = request.User,
             Password = request.Password,
-            UseOAuth = false
+            UseOAuth = false,
+            Implementor = request.Implementor,
         };
 
         try
