@@ -372,9 +372,7 @@
             progressUpdates: false,
             replaceExisting: false
         };
-        props.connection.invoke('StartContactTransfer', {
-            request
-        }).catch((err: Error) => {
+        props.connection.invoke('StartContactTransfer', request).catch((err: Error) => {
             console.error(err.toString());
             feedbackModal.value?.alert({
                 title: 'Error',
