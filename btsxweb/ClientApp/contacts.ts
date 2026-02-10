@@ -16,3 +16,4 @@ const app = createApp(ContactsApp, {
 });
 
 app.mount('#app');
+

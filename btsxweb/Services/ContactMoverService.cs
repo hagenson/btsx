@@ -229,6 +229,8 @@ namespace BtsxWeb.Services
 
         private async Task RevokeOAuthTokensAsync(ContactTransferJob job, IContactStatusNotifier notifier)
         {
+            if (tokenRevocationService == null)
+                return;
             try
             {
                 var sourceRevoked = true;

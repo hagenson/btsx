@@ -81,6 +81,8 @@ namespace Btsx
             var source = ContactServiceFactory.CreateContactService(SourceCredentials);
             var dest = ContactServiceFactory.CreateContactService(DestCredentials);
 
+            DoStatus($"Listing contact groups from {SourceCredentials.Server}...", false, StatusType.Info);
+
             DoStatus($"Listing contacts from {SourceCredentials.Server}...", false, StatusType.Info);
             var contacts = await source.ListContactsAsync(cancellationToken);
             totalContacts = contacts.Count;
@@ -92,16 +94,28 @@ namespace Btsx
             {
                 if (cancellationToken.IsCancellationRequested)
                     return;
-                DoStatus($"Moving {contact.ResourceName}...", true, StatusType.Info);
-                if (await dest.ContactExistsAsync(contact.ResourceName, cancellationToken))
+                if (contact.Person == null
+                    || contact.Person.Names == null
+                    || contact.Person.Names.Count == 0
+                    || string.IsNullOrEmpty(contact.Person.Names[0].DisplayName))
                 {
-                    DoStatus($"{contact.ResourceName} already exists. Skipping.", true, StatusType.Info);
+                    DoStatus($"Contact has no name, Skipping.", true, StatusType.Info);
                     stats.SkippedMessages++;
                 }
                 else
                 {
-                    await dest.UploadContactAsync(contact.VCard, contact.ResourceName, cancellationToken);
-                    stats.SuccessfulMessages++;
+                    var name = contact.Person.Names[0].DisplayName;
+                    DoStatus($"Moving {name}...", true, StatusType.Info);
+                    if (await dest.ContactExistsAsync(name, cancellationToken))
+                    {
+                        DoStatus($"{contact.ResourceName} already exists. Skipping.", true, StatusType.Info);
+                        stats.SkippedMessages++;
+                    }
+                    else
+                    {
+                        await dest.UploadContactAsync(contact.VCard, name, cancellationToken);
+                        stats.SuccessfulMessages++;
+                    }
                 }
                 completedContacts++;
             }

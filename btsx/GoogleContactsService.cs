@@ -2,6 +2,7 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.PeopleService.v1;
 using Google.Apis.PeopleService.v1.Data;
 using Google.Apis.Services;
+using System.Runtime.CompilerServices;
 
 namespace Btsx
 {
@@ -43,6 +44,7 @@ namespace Btsx
                 string? pageToken = null;
                 int pageNumber = 1;
 
+
                 do
                 {
                     var request = service.People.Connections.List("people/me");
@@ -59,10 +61,9 @@ namespace Btsx
                             var contactData = new ContactData
                             {
                                 ResourceName = person.ResourceName,
-                                Person = person,
-                                VCard = GenerateVCard(person)
+                                Person = person
                             };
-                            contacts.Add(contactData);
+                            contacts.Add(contactData);                            
                         }
                     }
 
@@ -72,23 +73,29 @@ namespace Btsx
                 } while (!string.IsNullOrEmpty(pageToken) && !cancellationToken.IsCancellationRequested);
             }
 
+            // Now match to the groups
+            var groups = new List<ContactGroup>();
+            await foreach (var group in ListContactGroupsAsync(cancellationToken))
+            {
+                groups.Add(group);
+            }
+
+            foreach (var contact in contacts)
+            {
+                var memberGroups = groups.Where(g => g.MemberResourceNames != null
+                        && g.MemberResourceNames.Contains(contact.ResourceName))
+                    .Select(g => g.FormattedName).ToArray();
+                contact.Groups = memberGroups;
+                contact.VCard = GenerateVCard(contact.Person, memberGroups);
+            }
             return contacts;
         }
 
-        /// <summary>
-        /// Fetches contacts with progress reporting.
-        /// </summary>
-        /// <param name="progressCallback">Callback for progress updates.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>List of contacts with their vCard data.</returns>
-        public async Task<List<ContactData>> ListContactsAsync(
-            Action<int, string>? progressCallback,
-            CancellationToken cancellationToken = default)
+
+        private async IAsyncEnumerable<ContactGroup> ListContactGroupsAsync([EnumeratorCancellation]CancellationToken cancellationToken = default)
         {
-            var contacts = new List<ContactData>();
-            
             var credential = GoogleCredential.FromAccessToken(oauthToken);
-            
+
             using (var service = new PeopleServiceService(new BaseClientService.Initializer
             {
                 HttpClientInitializer = credential,
@@ -98,28 +105,27 @@ namespace Btsx
                 string? pageToken = null;
                 int pageNumber = 1;
 
+
                 do
                 {
-                    progressCallback?.Invoke(contacts.Count, $"Fetching contacts page {pageNumber}...");
-
-                    var request = service.People.Connections.List("people/me");
-                    request.PersonFields = "names,emailAddresses,phoneNumbers,addresses,organizations,birthdays,metadata";
+                    if (cancellationToken.IsCancellationRequested)
+                        yield break;
+                    var request = service.ContactGroups.List();
                     request.PageSize = 1000;
                     request.PageToken = pageToken;
 
                     var response = await request.ExecuteAsync(cancellationToken);
 
-                    if (response.Connections != null)
+                    if (response.ContactGroups != null)
                     {
-                        foreach (var person in response.Connections)
+                        foreach (var group in response.ContactGroups)
                         {
-                            var contactData = new ContactData
-                            {
-                                ResourceName = person.ResourceName,
-                                Person = person,
-                                VCard = GenerateVCard(person)
-                            };
-                            contacts.Add(contactData);
+                            // Get the group with the members
+                            var greq = service.ContactGroups.Get(group.ResourceName);
+                            greq.MaxMembers = 1000;
+                            var gresp = await greq.ExecuteAsync(cancellationToken);
+                            if (gresp != null)
+                                yield return gresp;
                         }
                     }
 
@@ -127,19 +133,17 @@ namespace Btsx
                     pageNumber++;
 
                 } while (!string.IsNullOrEmpty(pageToken) && !cancellationToken.IsCancellationRequested);
-
-                progressCallback?.Invoke(contacts.Count, $"Completed fetching {contacts.Count} contacts");
             }
 
-            return contacts;
         }
 
+        
         /// <summary>
         /// Generates a vCard (version 3.0) from a Google Person object.
         /// </summary>
         /// <param name="person">Person object from Google People API.</param>
         /// <returns>vCard formatted string.</returns>
-        private string GenerateVCard(Person person)
+        private string GenerateVCard(Person person, string[] groups)
         {
             var vcard = new System.Text.StringBuilder();
             vcard.AppendLine("BEGIN:VCARD");
@@ -251,6 +255,11 @@ namespace Btsx
                 }
             }
 
+            if (groups != null && groups.Length > 0)
+            {
+                vcard.AppendLine($"CATEGORIES:{string.Join(",", groups.Select(g => EscapeVCardValue(g)))}");
+            }
+
             vcard.AppendLine("END:VCARD");
             return vcard.ToString();
         }
@@ -308,5 +317,8 @@ namespace Btsx
         /// The vCard representation of the contact.
         /// </summary>
         public string? VCard { get; set; }
+
+        public string[] Groups { get; set; }
     }
+
 }
