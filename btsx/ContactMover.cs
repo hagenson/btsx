@@ -84,7 +84,9 @@ namespace Btsx
             DoStatus($"Listing contact groups from {SourceCredentials.Server}...", false, StatusType.Info);
 
             DoStatus($"Listing contacts from {SourceCredentials.Server}...", false, StatusType.Info);
-            var contacts = await source.ListContactsAsync(cancellationToken);
+            var contacts = (await source.ListContactsAsync(cancellationToken))
+                .Concat(await source.ListCollectedContactsAsync(cancellationToken))
+                .ToList();
             totalContacts = contacts.Count;
             var stats = new MigrationStats
             {
@@ -94,35 +96,28 @@ namespace Btsx
             {
                 if (cancellationToken.IsCancellationRequested)
                     return;
-                if (contact.Person == null
-                    || contact.Person.Names == null
-                    || contact.Person.Names.Count == 0
-                    || string.IsNullOrEmpty(contact.Person.Names[0].DisplayName))
+                var name = contact.FormattedName
+                    ?? contact.EmailAddresses?.FirstOrDefault()
+                    ?? contact.PhoneNumbers?.FirstOrDefault();
+                DoStatus($"Moving {name}...", true, StatusType.Info);
+                if (await dest.ContactExistsAsync(contact, cancellationToken))
                 {
-                    DoStatus($"Contact has no name, Skipping.", true, StatusType.Info);
+                    DoStatus($"{name} already exists. Skipping.", true, StatusType.Info);
                     stats.SkippedMessages++;
                 }
                 else
                 {
-                    var name = contact.Person.Names[0].DisplayName;
-                    DoStatus($"Moving {name}...", true, StatusType.Info);
-                    if (await dest.ContactExistsAsync(name, cancellationToken))
-                    {
-                        DoStatus($"{contact.ResourceName} already exists. Skipping.", true, StatusType.Info);
-                        stats.SkippedMessages++;
-                    }
-                    else
-                    {
-                        await dest.UploadContactAsync(contact.VCard, name, cancellationToken);
+                    var success = await dest.UploadContactAsync(contact, cancellationToken);
+                    if (success)
                         stats.SuccessfulMessages++;
-                    }
+                    else
+                        stats.FailedMessages++;
                 }
                 completedContacts++;
             }
 
             DoStatus("Transfer complete.", true, StatusType.Info);
             Statistics = stats;
-            
         }
 
         /// <summary>

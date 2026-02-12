@@ -25,7 +25,7 @@ namespace BtsxWeb.Hubs
         /// <returns>Awaitable Task.</returns>
         public async Task CancelMigration(string jobId)
         {
-            var cancelled = mailMoverService.CancelMigration(jobId);
+            var cancelled = await mailMoverService.CancelMigrationAsync(jobId);
             if (cancelled)
             {
                 await Clients.Group(jobId).SendAsync("JobCancelled");

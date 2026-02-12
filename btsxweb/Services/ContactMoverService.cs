@@ -30,10 +30,13 @@ namespace BtsxWeb.Services
         /// </summary>
         /// <param name="jobId">ID of job to cancel.</param>
         /// <returns>True if the job could be cancelled.</returns>
-        public bool CancelTransfer(string jobId)
+        public async Task<bool> CancelTransferAsync(string jobId)
         {
             if (jobs.TryGetValue(jobId, out var job))
             {
+                job.IsCompleted = true;
+                job.Status = "Job cancelled.";
+                await persistenceService.SaveJobAsync(job);
                 job.CancellationTokenSource.Cancel();
                 return true;
             }
@@ -334,7 +337,7 @@ namespace BtsxWeb.Services
                     await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
 
                     var mover = new ContactMover();
-                    mover.SourceCredentials = 
+                    mover.SourceCredentials =
                         new Creds
                         {
                             Implementor = job.Request.SourceServiceType,
@@ -345,7 +348,7 @@ namespace BtsxWeb.Services
                             User = job.Request.SourceUser
                         };
 
-                    mover.DestCredentials = 
+                    mover.DestCredentials =
                         new Creds
                         {
                             Implementor = job.Request.DestServiceType,
@@ -365,6 +368,14 @@ namespace BtsxWeb.Services
                     };
 
                     await mover.ExecuteAsync(stoppingCts.Token);
+                    job.EndTime = DateTime.UtcNow;
+                    job.IsCompleted = true;
+                    await persistenceService.SaveJobAsync(job);
+                    await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Ignore cancellations - service may have terminated and user cancelled jobs are already persisted
                 }
                 catch (Exception ex)
                 {
@@ -375,11 +386,8 @@ namespace BtsxWeb.Services
                     job.EndTime = DateTime.UtcNow;
                     job.IsCompleted = true;
                     logger.LogError(ex, "Error during contact transfer for job {JobId}", job.JobId);
-                    await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
-                }
-                finally
-                {
                     await persistenceService.SaveJobAsync(job);
+                    await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
                 }
             }
         }

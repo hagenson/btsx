@@ -25,7 +25,7 @@ namespace BtsxWeb.Hubs
         /// <returns>Awaitable Task.</returns>
         public async Task CancelContactTransfer(string jobId)
         {
-            var cancelled = contactMoverService.CancelTransfer(jobId);
+            var cancelled = await contactMoverService.CancelTransferAsync(jobId);
             if (cancelled)
             {
                 await Clients.Group(jobId).SendAsync("JobCancelled");

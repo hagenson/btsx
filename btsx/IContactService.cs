@@ -1,4 +1,4 @@
-﻿using Btsx;
+﻿using Btsx.Google;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,8 +11,9 @@ namespace Btsx
     {
         Task<bool> TestConnectionAsync(CancellationToken cancellationToken);
 
-        Task<List<ContactData>> ListContactsAsync(CancellationToken cancellationToken = default);
-        Task<bool> ContactExistsAsync(string filename, CancellationToken cancellationToken);
-        Task<bool> UploadContactAsync(string vcard, string filename, CancellationToken cancellationToken);
+        Task<List<IContactData>> ListContactsAsync(CancellationToken cancellationToken = default);
+        Task<List<IContactData>> ListCollectedContactsAsync(CancellationToken cancellationToken = default);
+        Task<bool> ContactExistsAsync(IContactData contact, CancellationToken cancellationToken);
+        Task<bool> UploadContactAsync(IContactData contact, CancellationToken cancellationToken);
     }
 }
