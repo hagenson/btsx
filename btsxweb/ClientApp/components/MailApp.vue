@@ -64,7 +64,7 @@
                             <select class="form-select" id="duplicateHandling" v-model="duplicateHandling">
                                 <option value="Overwrite">Overwrite</option>
                                 <option value="Skip">Skip</option>
-                                <option value="CreateDuplicate">CreateDuplicate</option>
+                                <option value="CreateDuplicate">Create Duplicate</option>
                             </select>
                         </div>
                     </div>

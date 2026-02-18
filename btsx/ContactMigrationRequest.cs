@@ -5,7 +5,7 @@
         public override void Restarting()
         {
             if (Options != null)
-                Options.ReplaceExisting = true;
+                Options.DuplicateHandling = DuplicateHandling.Overwrite;
         }
     }
 }

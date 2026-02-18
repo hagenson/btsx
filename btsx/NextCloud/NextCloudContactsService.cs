@@ -532,6 +532,29 @@ namespace Btsx.NextCloud
         {
             throw new NotImplementedException();
         }
+
+        public async Task<bool> UpdateContactAsync(IContactData contact, CancellationToken cancellationToken = default)
+        {
+            if (contact == null)
+                throw new ArgumentNullException(nameof(contact));
+
+            string filename = GenerateFilename(contact);
+            var url = $"{baseUrl}{filename}";
+
+            try
+            {
+                string vcard = ConvertToVCard(contact);
+                var request = new HttpRequestMessage(HttpMethod.Put, url);
+                request.Content = new StringContent(vcard, Encoding.UTF8, "text/vcard");
+
+                var response = await httpClient.SendAsync(request, cancellationToken);
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 
     /// <summary>

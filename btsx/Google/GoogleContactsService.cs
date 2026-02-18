@@ -146,6 +146,75 @@ namespace Btsx.Google
             throw new NotImplementedException();
         }
 
+        public async Task<bool> DeleteContactAsync(IContactData contact, CancellationToken cancellationToken)
+        {
+            if (contact == null)
+                throw new ArgumentNullException(nameof(contact));
+
+            var googleContact = contact as GoogleContactData;
+            if (googleContact == null)
+                throw new ArgumentException("Contact must be a GoogleContactData instance", nameof(contact));
+
+            var resourceName = googleContact.person.ResourceName;
+            if (string.IsNullOrWhiteSpace(resourceName))
+                throw new ArgumentException("Contact resource name cannot be null or empty", nameof(contact));
+
+            try
+            {
+                var credential = GoogleCredential.FromAccessToken(oauthToken);
+
+                using (var service = new PeopleServiceService(new BaseClientService.Initializer
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "BTSX Contact Fetcher"
+                }))
+                {
+                    var request = service.People.DeleteContact(resourceName);
+                    await request.ExecuteAsync(cancellationToken);
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> UpdateContactAsync(IContactData contact, CancellationToken cancellationToken)
+        {
+            if (contact == null)
+                throw new ArgumentNullException(nameof(contact));
+
+            var googleContact = contact as GoogleContactData;
+            if (googleContact == null)
+                throw new ArgumentException("Contact must be a GoogleContactData instance", nameof(contact));
+
+            var resourceName = googleContact.person.ResourceName;
+            if (string.IsNullOrWhiteSpace(resourceName))
+                throw new ArgumentException("Contact resource name cannot be null or empty", nameof(contact));
+
+            try
+            {
+                var credential = GoogleCredential.FromAccessToken(oauthToken);
+
+                using (var service = new PeopleServiceService(new BaseClientService.Initializer
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "BTSX Contact Fetcher"
+                }))
+                {
+                    var request = service.People.UpdateContact(googleContact.person, resourceName);
+                    request.UpdatePersonFields = string.Join(",", personFields);
+                    await request.ExecuteAsync(cancellationToken);
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private readonly string oauthToken;
 
         private async Task<List<ContactGroup>> ListContactGroupsAsync(CancellationToken cancellationToken = default)

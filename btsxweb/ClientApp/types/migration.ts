@@ -27,7 +27,7 @@ export interface OAuthMessageData {
 }
 
 export interface ContactMoverOptions {
-    replaceExisting: boolean;
+    duplicateHandling: string;
     deleteSource: boolean;
     importFolderName: string;
     importCollectedContacts: boolean;

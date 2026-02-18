@@ -79,18 +79,65 @@ namespace Btsx
                     ?? contact.EmailAddresses?.FirstOrDefault()
                     ?? contact.PhoneNumbers?.FirstOrDefault();
                 DoStatus($"Moving {name}...", true, StatusType.Info);
-                if (await dest.ContactExistsAsync(contact, cancellationToken))
+                
+                bool success;
+                if (Options?.DuplicateHandling == DuplicateHandling.CreateDuplicate)
                 {
-                    DoStatus($"{name} already exists. Skipping.", true, StatusType.Info);
-                    stats.SkippedMessages++;
-                }
-                else
-                {
-                    var success = await dest.UploadContactAsync(contact, cancellationToken);
+                    success = await dest.UploadContactAsync(contact, cancellationToken);
                     if (success)
                         stats.SuccessfulMessages++;
                     else
                         stats.FailedMessages++;
+                }
+                else
+                {
+                    var exists = await dest.ContactExistsAsync(contact, cancellationToken);
+                    if (exists)
+                    {
+                        switch (Options?.DuplicateHandling)
+                        {
+                            case DuplicateHandling.Skip:
+                                DoStatus($"{name} already exists. Skipping.", true, StatusType.Info);
+                                stats.SkippedMessages++;
+                                break;
+                            case DuplicateHandling.Overwrite:
+                                DoStatus($"{name} already exists. Overwriting.", true, StatusType.Info);
+                                var deleted = await dest.DeleteContactAsync(contact, cancellationToken);
+                                if (deleted)
+                                {
+                                    success = await dest.UploadContactAsync(contact, cancellationToken);
+                                    if (success)
+                                        stats.SuccessfulMessages++;
+                                    else
+                                        stats.FailedMessages++;
+                                }
+                                else
+                                {
+                                    stats.FailedMessages++;
+                                }
+                                break;
+                            case DuplicateHandling.Merge:
+                                DoStatus($"{name} already exists. Merging.", true, StatusType.Info);
+                                success = await dest.UpdateContactAsync(contact, cancellationToken);
+                                if (success)
+                                    stats.SuccessfulMessages++;
+                                else
+                                    stats.FailedMessages++;
+                                break;
+                            default:
+                                DoStatus($"{name} already exists. Skipping.", true, StatusType.Info);
+                                stats.SkippedMessages++;
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        success = await dest.UploadContactAsync(contact, cancellationToken);
+                        if (success)
+                            stats.SuccessfulMessages++;
+                        else
+                            stats.FailedMessages++;
+                    }
                 }
                 completedItems++;
             }

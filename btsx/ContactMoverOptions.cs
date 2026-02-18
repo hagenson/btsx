@@ -6,9 +6,9 @@
     public class ContactMoverOptions
     {
         /// <summary>
-        /// Gets or sets a value indicating whether existing items should be replaced during the operation.
+        /// Gets or sets how duplicate contacts should be handled during the operation.
         /// </summary>
-        public bool ReplaceExisting { get; set; }
+        public DuplicateHandling DuplicateHandling { get; set; } = DuplicateHandling.Skip;
 
         /// <summary>
         /// Gets or sets a value indicating whether source contacts should be deleted after they are migrated.

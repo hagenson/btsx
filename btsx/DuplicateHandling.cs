@@ -4,6 +4,7 @@ namespace Btsx
     {
         Overwrite,
         Skip,
-        CreateDuplicate
+        CreateDuplicate,
+        Merge
     }
 }
