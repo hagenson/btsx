@@ -60,12 +60,12 @@
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="replaceExisting" v-model="replaceExisting">
-                                <label class="form-check-label" for="replaceExisting">
-                                    Replace Existing
-                                </label>
-                            </div>
+                            <label for="duplicateHandling" class="form-label">Duplicate Handling</label>
+                            <select class="form-select" id="duplicateHandling" v-model="duplicateHandling">
+                                <option value="Overwrite">Overwrite</option>
+                                <option value="Skip">Skip</option>
+                                <option value="CreateDuplicate">CreateDuplicate</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -113,7 +113,7 @@
     const deleteSource = ref<boolean>(false);
     const foldersOnly = ref<boolean>(false);
     const progressUpdates = ref<boolean>(true);
-    const replaceExisting = ref<boolean>(false);
+    const duplicateHandling = ref<string>('Overwrite');
 
     const tosAccepted = ref<boolean>(false);
 
@@ -185,7 +185,7 @@
             options: {
                 deleteSource: deleteSource.value,
                 foldersOnly: foldersOnly.value,
-                replaceExisting: replaceExisting.value
+                duplicateHandling: duplicateHandling.value
             },
             
             progressUpdates: progressUpdates.value,

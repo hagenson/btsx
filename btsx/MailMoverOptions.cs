@@ -15,14 +15,6 @@
         /// </summary>
         public bool FoldersOnly { get; set; }
 
-        /// <summary>
-        /// When true, for each email message copied, an attempt will be made to see if it already exists on the destination server
-        /// by trying to match the Message ID header.
-        /// </summary>
-        /// <remarks>
-        /// If false, no checks will be made to see if the email message exists. This may lead to the duplication of
-        /// emails in the destination account if multiple migration attempts are made.
-        /// </remarks>
-        public bool ReplaceExisting { get; set; }
+        public DuplicateHandling DuplicateHandling { get; set; } = DuplicateHandling.Overwrite;
     }
 }

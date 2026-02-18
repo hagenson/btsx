@@ -54,7 +54,7 @@ namespace BtsxCli
                 {
                     DeleteSource = false,
                     FoldersOnly = false,
-                    ReplaceExisting = false,
+                    DuplicateHandling = DuplicateHandling.Skip,
                 },
                 ProgressUpdates = true,
             };

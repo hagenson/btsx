@@ -333,19 +333,22 @@ namespace Btsx
                     if (hdr != null)
                     {
                         curHdr = hdr.Value;
-                        if (checkDuplicate || Options?.ReplaceExisting == true)
+                        if (Options?.DuplicateHandling == DuplicateHandling.CreateDuplicate)
+                        {
+                        }
+                        else if (checkDuplicate || Options?.DuplicateHandling == DuplicateHandling.Overwrite)
                         {
                             var match = await dstFolder.SearchAsync(SearchQuery.HeaderContains(
                                 hdr.Field, hdr.Value),
                                 cancellationToken);
-                            if (Options?.ReplaceExisting == true)
+                            if (Options?.DuplicateHandling == DuplicateHandling.Overwrite)
                             {
                                 foreach (var delId in match)
                                 {
-                                    await dstFolder.AddFlagsAsync(uid, MessageFlags.Deleted, true, cancellationToken);
+                                    await dstFolder.AddFlagsAsync(delId, MessageFlags.Deleted, true, cancellationToken);
                                 }
                             }
-                            else
+                            else if (Options?.DuplicateHandling == DuplicateHandling.Skip)
                             {
                                 skip = match.Count > 0;
                             }
@@ -420,7 +423,7 @@ namespace Btsx
                     await srcFolder.ExpungeAsync(cancellationToken);
                     DoStatus($"Expunged deleted messages from source", false, StatusType.Info);
                 }
-                if (Options?.ReplaceExisting == true)
+                if (Options?.DuplicateHandling == DuplicateHandling.Overwrite)
                 {
                     await dstFolder.ExpungeAsync(cancellationToken);
                 }
