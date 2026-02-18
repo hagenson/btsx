@@ -1,4 +1,4 @@
-namespace BtsxWeb.Models
+namespace Btsx.Google
 {
     /// <summary>
     /// Encapsulates connection details for Google OAuth token acquisition.

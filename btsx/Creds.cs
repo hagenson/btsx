@@ -8,11 +8,13 @@ namespace Btsx
         /// <summary>
         /// OAuth token obtains from an OAuth provider.
         /// </summary>
+        [Protected]
         public string? OAuthToken { get; set; }
 
         /// <summary>
         /// Account password.
         /// </summary>
+        [Protected]
         public string Password { get; set; } = "";
 
         /// <summary>
@@ -30,6 +32,6 @@ namespace Btsx
         /// </summary>
         public string User { get; set; } = "";
 
-        public string? Implementor { get; set; }
+        public string Implementer { get; set; } = "";
     }
 }

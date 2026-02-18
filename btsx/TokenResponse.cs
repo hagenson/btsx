@@ -1,4 +1,4 @@
-﻿namespace Btsxweb.Services
+﻿namespace Btsx
 {
     /// <summary>
     /// C# binding for a token request response.
@@ -8,28 +8,28 @@
         /// <summary>
         /// OAuth Access token.
         /// </summary>
-        public string? access_token { get; set; }
+        public string? AccessToken { get; set; }
 
         /// <summary>
         /// Seconds until expiry.
         /// </summary>
-        public int expires_in { get; set; }
+        public DateTime ExpiryDate { get; set; }
 
         /// <summary>
         /// Refresh token.
         /// </summary>
-        public string? refresh_token { get; set; }
+        public string? RefreshToken { get; set; }
 
         /// <summary>
         /// Allowed scopes.
         /// </summary>
-        public string? scope { get; set; }
+        public string? Scope { get; set; }
 
         /// <summary>
         /// Type of token.
         /// </summary>
-        public string? token_type { get; set; }
+        public string? TokenType { get; set; }
 
-        public string? user_id { get; set; }
+        public string? UserId { get; set; }
     }
 }

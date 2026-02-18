@@ -1,4 +1,4 @@
-using BtsxWeb.Services;
+using Btsx;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -7,10 +7,10 @@ namespace BtsxWeb.Pages;
 public class OAuthCallbackModel : PageModel
 {
     public OAuthCallbackModel(
-        GoogleOAuthService googleOAuth,
+        IServiceProvider serviceProvider,
         ILogger<OAuthCallbackModel> logger)
     {
-        this.googleOAuth = googleOAuth;
+        this.serviceProvider = serviceProvider;
         this.logger = logger;
     }
 
@@ -20,13 +20,24 @@ public class OAuthCallbackModel : PageModel
     public bool Success { get; set; }
     public string? Token { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(string? code, string? state, string? error,
+    public async Task<IActionResult> OnGetAsync(
+        string? id,
+        string? code,
+        string? state,
+        string? error,
         CancellationToken cancellationToken)
     {
         if (!string.IsNullOrEmpty(error))
         {
             Success = false;
             Error = error;
+            return Page();
+        }
+
+        if (string.IsNullOrEmpty(id))
+        {
+            Success = false;
+            Error = "Missing implementer";
             return Page();
         }
 
@@ -49,8 +60,9 @@ public class OAuthCallbackModel : PageModel
 
         try
         {
-            var tokenResponse = await googleOAuth.RequestTokenAsync(code, cancellationToken);
-            if (tokenResponse.access_token == null)
+            var oauthSvc = serviceProvider.GetRequiredKeyedService<IOAuthService>(id);
+            var tokenResponse = await oauthSvc.RequestTokenAsync(code, cancellationToken);
+            if (tokenResponse.AccessToken == null)
             {
                 Success = false;
                 Error = "No access token received";
@@ -58,11 +70,11 @@ public class OAuthCallbackModel : PageModel
             }
 
             // Get user's email from Google
-            Email = tokenResponse.user_id;
+            Email = tokenResponse.UserId;
 
             Success = true;
-            Token = tokenResponse.access_token;
-            ServerType = serverType ?? "source";
+            Token = tokenResponse.AccessToken;
+            ServerType = id;
         }
         catch (Exception ex)
         {
@@ -74,6 +86,6 @@ public class OAuthCallbackModel : PageModel
         return Page();
     }
 
-    private readonly GoogleOAuthService googleOAuth;
+    private readonly IServiceProvider serviceProvider;
     private readonly ILogger<OAuthCallbackModel> logger;
 }

@@ -1,29 +1,54 @@
+using AutoMapper;
+using Btsx;
+using Btsx.Google;
 using BtsxWeb;
 using BtsxWeb.Hubs;
 using BtsxWeb.Models;
 using BtsxWeb.Services;
 using Microsoft.Extensions.FileProviders;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<GoogleOAuthSettings>(builder.Configuration.GetSection("GoogleOAuth"));
-builder.Services.Configure<PersistenceSettings>(builder.Configuration.GetSection("Persistence"));
+builder.Services.Configure<Btsx.Persistence.PersistenceSettings>(builder.Configuration.GetSection("Persistence"));
 builder.Services.Configure<AppConfig>(builder.Configuration.GetSection("AppConfig"));
 
-builder.Services.AddRazorPages();
-builder.Services.AddSingleton<EncryptionService>();
-builder.Services.AddSingleton<JobPersistenceService>();
-builder.Services.AddSingleton<GoogleOAuthService>();
+builder.Services.AddRazorPages()
+    .AddJsonOptions(options =>
+    {
+        // Configure polymorphic serialization for MigrationRequest
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
+builder.Services.AddSingleton<IPersistenceService, Btsx.Persistence.PersistenceService>();
+builder.Services.AddSingleton<IEncryptionService, Btsx.Persistence.EncryptionService>();
+builder.Services.AddKeyedSingleton<IOAuthService, GoogleOAuthService>("Google");
+builder.Services.AddSingleton<IMoverFactory, MoverFactory>();
 builder.Services.AddSingleton<MailMoverService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<MailMoverService>());
-builder.Services.AddSingleton<ContactMoverService>();
-builder.Services.AddSingleton<ContactMapper>();
-builder.Services.AddSingleton<ContactJobPersistenceService>();
-builder.Services.AddHostedService(provider => provider.GetRequiredService<ContactMoverService>());
-builder.Services.AddSignalR();
+
+builder.Services.AddSignalR()
+.AddJsonProtocol(options =>
+{
+    // Use camelCase property names to match JavaScript client
+    options.PayloadSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+
 builder.Services.AddScoped<IStatusNotifier, NotifierProxy>();
-builder.Services.AddScoped<IContactStatusNotifier, ContactNotifierProxy>();
-builder.Services.AddSingleton<Mapper>();
+builder.Services.AddSingleton<IMapper>(sp =>
+{
+    var cfg = new MapperConfiguration(cfg =>
+    {
+        cfg.AddProfile<AutoMapperConfig>();
+    },
+    sp.GetRequiredService<ILoggerFactory>());
+#if DEBUG
+    cfg.AssertConfigurationIsValid();
+#endif
+    return cfg.CreateMapper();
+});
 builder.Services.AddHttpClient();
 builder.Services.AddSession(options =>
 {
@@ -65,6 +90,6 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 app.MapHub<MigrationHub>("/migrationHub");
-app.MapHub<ContactHub>("/contactHub");
+app.MapGet("/{id}", (string id) => Results.Accepted("/Index", new { id }));
 
 app.Run();

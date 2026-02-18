@@ -1,13 +1,13 @@
-using BtsxWeb.Models;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 
-namespace BtsxWeb.Services
+namespace Btsx.Persistence
 {
     /// <summary>
     /// Provide encryption and decryption operations for the application.
     /// </summary>
-    public class EncryptionService
+    public class EncryptionService : IEncryptionService
     {
         /// <summary>
         /// Initialises the service.

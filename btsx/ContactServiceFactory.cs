@@ -12,7 +12,7 @@ namespace Btsx
     {
         public static IContactService CreateContactService(Creds creds)
         {
-            var name = $"{creds.Implementor}ContactsService";
+            var name = $"{creds.Implementer}ContactsService";
             var type = Assembly.GetExecutingAssembly().GetTypes()
                 .FirstOrDefault(t => t.Name ==  name);
             if (type == null)

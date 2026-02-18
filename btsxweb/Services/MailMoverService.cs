@@ -1,5 +1,7 @@
+using AutoMapper;
 using Btsx;
 using BtsxWeb.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Serialization;
 using System.Collections.Concurrent;
 
@@ -15,16 +17,16 @@ namespace BtsxWeb.Services
         /// </summary>
         public MailMoverService(
             IServiceScopeFactory scopeFactory,
-            Mapper mapper,
+            IMapper mapper,
             ILogger<MailMoverService> logger,
-            JobPersistenceService persistenceService,
-            GoogleOAuthService tokenRevocationService)
+            IPersistenceService persistenceService,
+            IMoverFactory moverFactory)
         {
             this.scopeFactory = scopeFactory;
             this.mapper = mapper;
             this.logger = logger;
             this.persistenceService = persistenceService;
-            this.tokenRevocationService = tokenRevocationService;
+            this.moverFactory = moverFactory;
         }
 
         /// <summary>
@@ -34,12 +36,12 @@ namespace BtsxWeb.Services
         /// <returns>True if the job could be cancelled.</returns>
         public async Task<bool> CancelMigrationAsync(string jobId)
         {
-            if (jobs.TryGetValue(jobId, out var job))
+            if (jobs.TryGetValue(jobId, out var running))
             {
-                job.IsCompleted = true;
-                job.Status = "Job cancelled.";
-                await persistenceService.SaveJobAsync(job);
-                job.CancellationTokenSource.Cancel();
+                running.Job.IsCompleted = true;
+                running.Job.Status = "Job cancelled.";
+                await persistenceService.ClearProtectedPropertiesAsync(running.Job, stoppingCts!.Token);
+                running.CancellationTokenSource.Cancel();
                 return true;
             }
             return false;
@@ -64,7 +66,7 @@ namespace BtsxWeb.Services
             }
 
             jobs.TryRemove(jobId, out _);
-            persistenceService.DeleteJob(jobId);
+            await persistenceService.DeleteJobAsync(jobId, stoppingCts!.Token);
         }
 
         /// <summary>
@@ -82,12 +84,13 @@ namespace BtsxWeb.Services
         /// <returns>Migration job if found.</returns>
         public async Task<MigrationJob?> GetJob(string jobId)
         {
-            if (jobs.TryGetValue(jobId, out var job))
+            if (jobs.TryGetValue(jobId, out var running))
             {
-                return job;
+                return (MigrationJob)running.Job;
             }
 
-            return await persistenceService.LoadJobAsync(jobId);
+            var result = await persistenceService.LoadJobAsync(jobId, stoppingCts!.Token);
+            return (MigrationJob?)result;
         }
 
 
@@ -99,7 +102,7 @@ namespace BtsxWeb.Services
             stoppingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             await RestoreIncompleteJobsAsync();
-            await persistenceService.CleanupOldJobsAsync();
+            await persistenceService.CleanupOldJobsAsync(cancellationToken);
 
             executingTask = ExecuteAsync(stoppingCts.Token);
         }
@@ -114,21 +117,26 @@ namespace BtsxWeb.Services
             var jobId = Guid.NewGuid().ToString("N");
             var job = new MigrationJob
             {
-                JobId = jobId,
+                Id = jobId,
                 Request = request,
+                StartTime = DateTime.Now,
                 Status = "Starting",
-                Progress = 0,
-                StartTime = DateTime.UtcNow,
-                IsCompleted = false,
-                CancellationTokenSource = new CancellationTokenSource()
+                StatusType = "Info",
             };
-
-            jobs[jobId] = job;
+            var running = new RunningJob(job);
+            jobs[jobId] = running;
 
             Task.Run(async () =>
             {
-                await persistenceService.SaveJobAsync(job);
-                await RunMigrationAsync(job);
+                try
+                {
+                    await persistenceService.SaveJobAsync(job, stoppingCts!.Token);
+                    await RunMigrationAsync(running);
+                }
+                catch(Exception ex)
+                {
+                    logger.LogError(ex, "Unexpected error starting migration job {JobId}", jobId);
+                }
             });
 
             return jobId;
@@ -154,17 +162,15 @@ namespace BtsxWeb.Services
             }
         }
 
-        private readonly ConcurrentDictionary<string, MigrationJob> jobs = new();
+        private readonly ConcurrentDictionary<string, RunningJob> jobs = new();
 
         private readonly ILogger<MailMoverService> logger;
 
-        private readonly Mapper mapper;
+        private readonly IMapper mapper;
 
-        private readonly JobPersistenceService persistenceService;
-
+        private readonly IPersistenceService persistenceService;
+        private readonly IMoverFactory moverFactory;
         private readonly IServiceScopeFactory scopeFactory;
-
-        private readonly GoogleOAuthService tokenRevocationService;
 
         private Task? executingTask;
 
@@ -197,7 +203,7 @@ namespace BtsxWeb.Services
 
                 if (!stoppingToken.IsCancellationRequested)
                 {
-                    await persistenceService.CleanupOldJobsAsync();
+                    await persistenceService.CleanupOldJobsAsync(stoppingToken);
                 }
             }
         }
@@ -206,20 +212,19 @@ namespace BtsxWeb.Services
         {
             try
             {
-                var incompleteJobs = await persistenceService.GetIncompleteJobsAsync();
+                var incompleteJobs = await persistenceService.GetIncompleteJobsAsync(stoppingCts!.Token);
 
-                foreach (var job in incompleteJobs)
+                foreach (MigrationJob job in incompleteJobs)
                 {
-                    logger.LogInformation("Restoring incomplete job {JobId}", job.JobId);
-
-                    job.Request.ReplaceExisting = true;
-                    job.CancellationTokenSource = new CancellationTokenSource();
+                    logger.LogInformation("Restoring incomplete job {JobId}", job.Id);
+                    var running = new RunningJob(job);
+                    job.Request.Restarting();
                     job.Status = "Restarting";
                     job.Progress = 0;
 
-                    jobs[job.JobId] = job;
+                    jobs[job.Id] = running;
 
-                    _ = Task.Run(async () => await RunMigrationAsync(job));
+                    _ = Task.Run(async () => await RunMigrationAsync(running));
                 }
 
                 if (incompleteJobs.Count > 0)
@@ -233,148 +238,78 @@ namespace BtsxWeb.Services
             }
         }
 
-        private async Task RevokeOAuthTokensAsync(MigrationJob job, IStatusNotifier notifier)
+        private async Task RevokeOAuthTokensAsync(
+            IServiceProvider serviceProvider,
+            IJob job,
+            IStatusNotifier notifier)
         {
-            try
+            foreach (var credential in new[] { job.Request?.SourceCredentials, job.Request?.DestinationCredentials })
             {
-                var (sourceRevoked, destRevoked) = await tokenRevocationService.RevokeJobTokensAsync(job);
-
-                var revokedTokens = new List<string>();
-                if (sourceRevoked && job.Request.SourceUseOAuth)
+                if (credential?.UseOAuth == true && !string.IsNullOrEmpty(credential.OAuthToken))
                 {
-                    revokedTokens.Add("source");
-                }
-                if (destRevoked && job.Request.DestUseOAuth)
-                {
-                    revokedTokens.Add("destination");
-                }
-
-                if (!sourceRevoked || !destRevoked)
-                {
-                    var warningMessages = new List<string>();
-                    if (!sourceRevoked && job.Request.SourceUseOAuth)
+                    var oauthSvc = serviceProvider.GetRequiredKeyedService<IOAuthService>(credential.Implementer);
+                    try
                     {
-                        warningMessages.Add("source");
+                        await oauthSvc.RevokeTokenAsync(credential.OAuthToken, stoppingCts!.Token);
+                        job.Status = $"Successfully revoked OAuth token for {credential.Server}.";
+                        job.StatusType = "Info";
+                        await notifier.NotifyStatusAsync(mapper.Map<MigrationJobModel>(job), stoppingCts!.Token);
+
                     }
-                    if (!destRevoked && job.Request.DestUseOAuth)
+                    catch (Exception ex)
                     {
-                        warningMessages.Add("destination");
-                    }
-
-                    if (warningMessages.Count > 0)
-                    {
-                        var tempStatus = job.Status;
-                        var tempStatusType = job.StatusType;
-
-                        job.Status = $"Warning: Failed to revoke {string.Join(" and ", warningMessages)} OAuth token(s)";
+                        logger.LogWarning(ex, "Failed to revoke OAuth token for {Server} in job {JobId}",
+                            credential.Server, job.Id);
+                        job.Status = $"Warning: Failed to revoke OAuth token for {credential.Server}.";
                         job.StatusType = "Warning";
-                        await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts!.Token);
-
-                        job.Status = tempStatus;
-                        job.StatusType = tempStatusType;
-
-                        logger.LogWarning("Failed to revoke OAuth tokens for job {JobId}: {Tokens}",
-                            job.JobId, string.Join(" and ", warningMessages));
+                        await notifier.NotifyStatusAsync(mapper.Map<MigrationJobModel>(job), stoppingCts!.Token);
                     }
                 }
-
-                if (revokedTokens.Count > 0)
-                {
-                    var tempStatus = job.Status;
-                    var tempStatusType = job.StatusType;
-
-                    job.Status = $"Successfully revoked {string.Join(" and ", revokedTokens)} OAuth token(s)";
-                    job.StatusType = "Info";
-                    await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts!.Token);
-
-                    job.Status = tempStatus;
-                    job.StatusType = tempStatusType;
-
-                    logger.LogInformation("Successfully revoked OAuth tokens for job {JobId}: {Tokens}",
-                        job.JobId, string.Join(" and ", revokedTokens));
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Exception occurred while revoking OAuth tokens for job {JobId}", job.JobId);
-
-                var tempStatus = job.Status;
-                var tempStatusType = job.StatusType;
-
-                job.Status = "Warning: Failed to revoke OAuth token(s) due to an error";
-                job.StatusType = "Warning";
-                await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts!.Token);
-
-                job.Status = tempStatus;
-                job.StatusType = tempStatusType;
             }
         }
 
-        private async Task RunMigrationAsync(MigrationJob job)
+        private async Task RunMigrationAsync(RunningJob running)
         {
             if (stoppingCts == null)
                 throw new InvalidOperationException($"{nameof(stoppingCts)} has not been initialised.");
-
             using (var scope = scopeFactory.CreateScope())
             {
                 var notifier = scope.ServiceProvider.GetRequiredService<IStatusNotifier>();
                 try
                 {
-                    var mover = new MailMover
-                    {
-                        SourceCredentials = new Creds
-                        {
-                            Server = job.Request.SourceServer,
-                            User = job.Request.SourceUser,
-                            Password = job.Request.SourcePassword,
-                            OAuthToken = job.Request.SourceOAuthToken,
-                            UseOAuth = job.Request.SourceUseOAuth
-                        },
-                        DestCredentials = new Creds
-                        {
-                            Server = job.Request.DestServer,
-                            User = job.Request.DestUser,
-                            Password = job.Request.DestPassword,
-                            OAuthToken = job.Request.DestOAuthToken,
-                            UseOAuth = job.Request.DestUseOAuth
-                        },
-                        DeleteSource = job.Request.DeleteSource,
-                        FoldersOnly = job.Request.FoldersOnly,
-                        ProgressUpdates = job.Request.ProgressUpdates,
-                        ReplaceExisting = job.Request.ReplaceExisting
-                    };
+                    var mover = moverFactory.CreateMover(running.Job.Request);
 
                     mover.StatusUpdate += async (sender, e) =>
-                    {
-                        job.Status = e.Status ?? "";
-                        job.Progress = e.Percentage;
-                        job.StatusType = e.Type.ToString();
-                        await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
+                    { 
+                        running.Job.Status = e.Status ?? "";
+                        running.Job.Progress = e.Percentage;
+                        running.Job.StatusType = e.Type.ToString();
+                        await notifier.NotifyStatusAsync(mapper.Map<MigrationJobModel>(running.Job), stoppingCts.Token);
                     };
 
-                    await mover.ExecuteAsync(job.CancellationTokenSource.Token);
+                    await mover.ExecuteAsync(running.CancellationTokenSource.Token);
 
-                    if (job.CancellationTokenSource.Token.IsCancellationRequested)
+                    if (running.CancellationTokenSource.Token.IsCancellationRequested)
                     {
-                        await RevokeOAuthTokensAsync(job, notifier);
+                        await RevokeOAuthTokensAsync(scope.ServiceProvider, running.Job, notifier);
 
-                        job.Status = "Cancelled by user";
-                        job.StatusType = "Warning";
-                        job.EndTime = DateTime.UtcNow;
-                        job.IsCompleted = true;
-                        await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
+                        running.Job.Status = "Cancelled by user";
+                        running.Job.StatusType = "Warning";
+                        running.Job.EndTime = DateTime.UtcNow;
+                        running.Job.IsCompleted = true;
+                        await notifier.NotifyStatusAsync(mapper.Map<MigrationJobModel>(running.Job), stoppingCts.Token);
                     }
                     else
                     {
-                        await RevokeOAuthTokensAsync(job, notifier);
+                        await RevokeOAuthTokensAsync(scope.ServiceProvider, running.Job, notifier);
 
-                        job.Status = "Completed";
-                        job.Progress = 100;
-                        job.Statistics = mover.Statistics;
-                        job.EndTime = DateTime.UtcNow;
-                        job.IsCompleted = true;
-                        await persistenceService.SaveJobAsync(job);
-                        await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
+                        running.Job.Status = "Completed";
+                        running.Job.Progress = 100;
+                        running.Job.Statistics = mover.Statistics;
+                        running.Job.EndTime = DateTime.UtcNow;
+                        running.Job.IsCompleted = true;
+                        await persistenceService.ClearProtectedPropertiesAsync(running.Job, stoppingCts!.Token);
+                        await notifier.NotifyStatusAsync(mapper.Map<MigrationJobModel>(running.Job), stoppingCts.Token);
                     }
                 }
                 catch (OperationCanceledException)
@@ -383,15 +318,15 @@ namespace BtsxWeb.Services
                 }
                 catch (Exception ex)
                 {
-                    await RevokeOAuthTokensAsync(job, notifier);
+                    await RevokeOAuthTokensAsync(scope.ServiceProvider, running.Job, notifier);
 
-                    job.Status = $"Error: {ex.Message}";
-                    job.StatusType = "Error";
-                    job.EndTime = DateTime.UtcNow;
-                    job.IsCompleted = true;
-                    logger.LogError(ex, "Error during migration for job {JobId}", job.JobId);
-                    await persistenceService.SaveJobAsync(job);
-                    await notifier.NotifyStatusAsync(mapper.Map(job), stoppingCts.Token);
+                    running.Job.Status = $"Error: {ex.Message}";
+                    running.Job.StatusType = "Error";
+                    running.Job.EndTime = DateTime.UtcNow;
+                    running.Job.IsCompleted = true;
+                    logger.LogError(ex, "Error during migration for job {JobId}", running.Job.Id);
+                    await persistenceService.SaveJobAsync(running.Job, stoppingCts!.Token);
+                    await notifier.NotifyStatusAsync(mapper.Map<MigrationJobModel>(running.Job), stoppingCts.Token);
                 }
             }
         }

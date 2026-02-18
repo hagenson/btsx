@@ -1,4 +1,4 @@
-namespace BtsxWeb.Models
+namespace Btsx.Persistence
 {
     /// <summary>
     /// Encapsulates configuration settings for the job persistence service.

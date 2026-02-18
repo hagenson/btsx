@@ -5,13 +5,8 @@ namespace BtsxWeb.Services
     /// <summary>
     /// Encapsulates the data for a migration job.
     /// </summary>
-    public class MigrationJob
+    public class MigrationJob: IJob
     {
-        /// <summary>
-        /// Cancellation token source that can be used to cancel the running job.
-        /// </summary>
-        public CancellationTokenSource CancellationTokenSource { get; set; } = new();
-
         /// <summary>
         /// Date and time the job terminated if is it complete.
         /// </summary>
@@ -25,18 +20,13 @@ namespace BtsxWeb.Services
         /// <summary>
         /// Unique Identifier for the job.
         /// </summary>
-        public string JobId { get; set; } = "";
+        public string Id { get; set; } = "";
 
         /// <summary>
         /// Percentage completion of the job.
         /// </summary>
         public int Progress { get; set; }
-
-        /// <summary>
-        /// Migration job request parameters from which the job was created.
-        /// </summary>
-        public MigrationRequest Request { get; set; } = new();
-
+        
         /// <summary>
         /// Date and time the job started running.
         /// </summary>
@@ -56,5 +46,7 @@ namespace BtsxWeb.Services
         /// Last status update type.
         /// </summary>
         public string StatusType { get; set; } = "Info";
+
+        public MigrationRequest Request { get; set; } = default!;
     }
 }

@@ -1,20 +1,17 @@
-using Btsxweb.Services;
-using BtsxWeb.Models;
-using Google.Apis.Auth;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
 using Google.Apis.Oauth2.v2;
 using Google.Apis.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Net;
 using GoogleAuthResponses = Google.Apis.Auth.OAuth2.Responses;
 
-namespace BtsxWeb.Services
+namespace Btsx.Google
 {
     /// <summary>
     /// Abstracts the Google API service calls we need.
     /// </summary>
-    public class GoogleOAuthService
+    public class GoogleOAuthService: IOAuthService
     {
         /// <summary>
         /// Initialises the service.
@@ -27,7 +24,7 @@ namespace BtsxWeb.Services
 
             clientId = googleOAuthSettings.Value.ClientId;
             clientSecret = googleOAuthSettings.Value.ClientSecret;
-            redirectUri = googleOAuthSettings.Value.RedirectUri;
+            redirectUri = string.Format(googleOAuthSettings.Value.RedirectUri, "Google");
 
             if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) || string.IsNullOrEmpty(redirectUri))
                 throw new InvalidOperationException("Google OAuth is not configured properly");
@@ -38,11 +35,11 @@ namespace BtsxWeb.Services
                 {
                     ClientId = clientId,
                     ClientSecret = clientSecret
-                },                
+                },
                 Scopes = new[] { "openid", "email", "https://mail.google.com/", "https://www.googleapis.com/auth/contacts" }
             });
         }
-        
+
         /// <summary>
         /// Requests an OAuth token from the google API.
         /// </summary>
@@ -74,12 +71,12 @@ namespace BtsxWeb.Services
 
                 return new TokenResponse
                 {
-                    access_token = tokenResponse.AccessToken,
-                    expires_in = (int)(tokenResponse.ExpiresInSeconds ?? 0),
-                    refresh_token = tokenResponse.RefreshToken,
-                    scope = tokenResponse.Scope,
-                    token_type = tokenResponse.TokenType,
-                    user_id = userInfo.Email,
+                    AccessToken = tokenResponse.AccessToken,
+                    ExpiryDate = tokenResponse.IssuedUtc.AddSeconds(tokenResponse.ExpiresInSeconds ?? 0),
+                    RefreshToken = tokenResponse.RefreshToken,
+                    Scope = tokenResponse.Scope,
+                    TokenType = tokenResponse.TokenType,
+                    UserId = userInfo.Email,
                 };
             }
             catch (GoogleAuthResponses.TokenResponseException ex)
@@ -95,36 +92,11 @@ namespace BtsxWeb.Services
         }
 
         /// <summary>
-        /// Revokes all OSuath tokens for a migration job.
-        /// </summary>
-        /// <param name="job">Job to revoke the tokens for.</param>
-        /// <returns>Awaitable task</returns>
-        public async Task<(bool sourceRevoked, bool destRevoked)> RevokeJobTokensAsync(MigrationJob job)
-        {
-            var sourceRevoked = true;
-            var destRevoked = true;
-
-            if (job.Request.SourceUseOAuth && !string.IsNullOrWhiteSpace(job.Request.SourceOAuthToken))
-            {
-                logger.LogInformation("Revoking source OAuth token for job {JobId}", job.JobId);
-                sourceRevoked = await RevokeTokenAsync(job.Request.SourceOAuthToken);
-            }
-
-            if (job.Request.DestUseOAuth && !string.IsNullOrWhiteSpace(job.Request.DestOAuthToken))
-            {
-                logger.LogInformation("Revoking destination OAuth token for job {JobId}", job.JobId);
-                destRevoked = await RevokeTokenAsync(job.Request.DestOAuthToken);
-            }
-
-            return (sourceRevoked, destRevoked);
-        }
-
-        /// <summary>
         /// Revokes a Google OAuth token.
         /// </summary>
         /// <param name="token">Token to revoke.</param>
         /// <returns>True if the token was revoked.</returns>
-        public async Task<bool> RevokeTokenAsync(string? token)
+        public async Task<bool> RevokeTokenAsync(string? token, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(token))
             {
@@ -133,7 +105,7 @@ namespace BtsxWeb.Services
 
             try
             {
-                await flow.RevokeTokenAsync(string.Empty, token, CancellationToken.None);
+                await flow.RevokeTokenAsync(string.Empty, token, cancellationToken);
                 logger.LogInformation("Successfully revoked OAuth token");
                 return true;
             }
@@ -143,6 +115,21 @@ namespace BtsxWeb.Services
                 return false;
             }
         }
+
+        public string GetAuthUrl(MigrationType type, MigrationDirection direction, string state)
+        {
+            var scope = type switch
+            {
+                MigrationType.Mail => "https://mail.google.com/ https://www.googleapis.com/auth/userinfo.email",
+                MigrationType.Contacts => "https://www.googleapis.com/auth/contacts https://www.googleapis.com/auth/contacts.other.readonly https://www.googleapis.com/auth/userinfo.email",
+                _ => throw new ArgumentOutOfRangeException(nameof(type), $"Unsupported migration type: {type}")
+            };
+                
+            scope = Uri.EscapeDataString(scope);
+            var authUrl = $"https://accounts.google.com/o/oauth2/v2/auth?client_id={Uri.EscapeDataString(clientId)}&redirect_uri={Uri.EscapeDataString(redirectUri)}&response_type=code&scope={scope}&access_type=offline&prompt=consent&state={state}";
+            return authUrl;
+        }
+
 
         private readonly string clientId;
 

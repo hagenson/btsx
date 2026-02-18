@@ -3,42 +3,21 @@ namespace Btsx
     /// <summary>
     /// Contains the logic to transfer contacts from one account to another.
     /// </summary>
-    public class ContactMover
+    public class ContactMover: MoverBase, IMover<Creds, ContactMoverOptions>
     {
-        /// <summary>
-        /// Event triggered to report status updates.
-        /// </summary>
-        public event StatusEvent StatusUpdate
-        {
-            add
-            {
-                statusUpdate += value;
-            }
-            remove
-            {
-                statusUpdate -= value;
-            }
-        }
 
         /// <summary>
         /// Specifies the destination account.
         /// </summary>
-        public Creds? DestCredentials { get; set; }
+        public Creds? DestinationCredentials { get; set; }
 
-        /// <summary>
-        /// When true, completion percentage will be calculated and progress updates notified via the <see cref="StatusUpdate"/> event.
-        /// </summary>
-        public bool ProgressUpdates { get; set; }
-
+        
         /// <summary>
         /// The credentials for the source account.
         /// </summary>
         public Creds? SourceCredentials { get; set; }
 
-        /// <summary>
-        /// Contains statistics for the executed migration job.
-        /// </summary>
-        public MigrationStats? Statistics { get; private set; }
+        public ContactMoverOptions? Options { get; set; }
 
         /// <summary>
         /// Tests that the provided credentials will successfully authenticate.
@@ -46,7 +25,7 @@ namespace Btsx
         /// <param name="creds">Account credentials to test.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>True if the account was authenticated successfully.</returns>
-        public static Task<bool> TestAuthenticationAsync(
+        public override Task<bool> TestAuthenticationAsync(
             Creds creds,
             CancellationToken cancellationToken = default)
         {
@@ -67,19 +46,19 @@ namespace Btsx
         /// </summary>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Awaitable task.</returns>
-        public async Task ExecuteAsync(CancellationToken cancellationToken)
+        public async override Task ExecuteAsync(CancellationToken cancellationToken)
         {
             if (SourceCredentials == null)
                 throw new InvalidOperationException($"{nameof(SourceCredentials)} must be specified.");
-            if (DestCredentials == null)
-                throw new InvalidOperationException($"{nameof(DestCredentials)} must be specified.");
+            if (DestinationCredentials == null)
+                throw new InvalidOperationException($"{nameof(DestinationCredentials)} must be specified.");
 
-            totalContacts = 0;
-            completedContacts = 0;
+            totalItems = 0;
+            completedItems = 0;
             progress = 0;
 
             var source = ContactServiceFactory.CreateContactService(SourceCredentials);
-            var dest = ContactServiceFactory.CreateContactService(DestCredentials);
+            var dest = ContactServiceFactory.CreateContactService(DestinationCredentials);
 
             DoStatus($"Listing contact groups from {SourceCredentials.Server}...", false, StatusType.Info);
 
@@ -87,10 +66,10 @@ namespace Btsx
             var contacts = (await source.ListContactsAsync(cancellationToken))
                 .Concat(await source.ListCollectedContactsAsync(cancellationToken))
                 .ToList();
-            totalContacts = contacts.Count;
+            totalItems = contacts.Count;
             var stats = new MigrationStats
             {
-                TotalMessages = totalContacts,
+                TotalMessages = totalItems,
             };
             foreach (var contact in contacts)
             {
@@ -113,60 +92,13 @@ namespace Btsx
                     else
                         stats.FailedMessages++;
                 }
-                completedContacts++;
+                completedItems++;
             }
 
             DoStatus("Transfer complete.", true, StatusType.Info);
             Statistics = stats;
         }
 
-        /// <summary>
-        /// Called to notify status updates.
-        /// </summary>
-        /// <param name="args">Migration job status.</param>
-        protected virtual void OnProgressUpdate(StatusEventArgs args)
-        {
-            statusUpdate?.Invoke(this, args);
-        }
 
-        private int completedContacts;
-
-        private int progress;
-
-        private int totalContacts;
-
-        private event StatusEvent? statusUpdate;
-
-
-        private void DoStatus(string message, bool progress, StatusType type)
-        {
-            bool send = false;
-            var prog = totalContacts > 0 
-                ? (int)((decimal)completedContacts / (decimal)totalContacts * 100m)
-                : 0;
-            if (progress)
-            {
-                if (totalContacts > 0)
-                {
-                    if (prog != this.progress)
-                    {
-                        send = true;
-                        this.progress = prog;
-                    }
-                }
-
-                send = send || completedContacts % 10 == 0;
-            }
-            else
-            {
-                this.progress = prog;
-                send = true;
-            }
-
-            if (send)
-            {
-                OnProgressUpdate(new StatusEventArgs { Percentage = this.progress, Status = message, Type = type });
-            }
-        }
     }
 }

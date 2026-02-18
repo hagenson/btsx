@@ -46,15 +46,19 @@ namespace BtsxCli
 
         static async Task MigrateMailAsync()
         {
-            var mover = new MailMover();
-            mover.DeleteSource = false;
-            mover.FoldersOnly = false;
-            mover.ReplaceExisting = false;
-            mover.SourceCredentials = src;
-            mover.DestCredentials = dst;
-            mover.ProgressUpdates = true;
+            var mover = new MailMover
+            {
+                SourceCredentials = src,
+                DestinationCredentials = dst,
+                Options = new MailMoverOptions
+                {
+                    DeleteSource = false,
+                    FoldersOnly = false,
+                    ReplaceExisting = false,
+                },
+                ProgressUpdates = true,
+            };
             mover.StatusUpdate += Mover_ProgressUpdate;
-
             await mover.ExecuteAsync(CancellationToken.None);
             if (mover.Statistics != null)
             {

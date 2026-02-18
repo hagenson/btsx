@@ -1,3 +1,5 @@
+using AutoMapper;
+using Btsx;
 using BtsxWeb.Models;
 using BtsxWeb.Services;
 using Microsoft.AspNetCore.SignalR;
@@ -12,7 +14,7 @@ namespace BtsxWeb.Hubs
         /// <summary>
         /// Initialises the hub.
         /// </summary>
-        public MigrationHub(MailMoverService mailMoverService, Mapper mapper)
+        public MigrationHub(MailMoverService mailMoverService, IMapper mapper)
         {
             this.mailMoverService = mailMoverService;
             this.mapper = mapper;
@@ -55,7 +57,7 @@ namespace BtsxWeb.Hubs
                 return null;
             }
 
-            return mapper.Map(job);
+            return mapper.Map<MigrationJobModel>(job);
         }
 
         /// <summary>
@@ -81,6 +83,6 @@ namespace BtsxWeb.Hubs
         }
 
         private readonly MailMoverService mailMoverService;
-        private readonly Mapper mapper;
+        private readonly IMapper mapper;
     }
 }
