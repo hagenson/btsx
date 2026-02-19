@@ -66,112 +66,137 @@ namespace Btsx
 
             DoStatus($"Listing contacts from {SourceCredentials.Server}...", false, StatusType.Info);
             var contacts = (await source.ListContactsAsync(cancellationToken))
-                .Concat(await source.ListCollectedContactsAsync(cancellationToken))
                 .ToList();
-            totalItems = contacts.Count;
+            
+            var collectedContacts = new List<IContactData>();
+            if (Options?.ImportCollectedContacts == true)
+            {
+                DoStatus($"Listing collected contacts from {SourceCredentials.Server}...", false, StatusType.Info);
+                collectedContacts = (await source.ListCollectedContactsAsync(cancellationToken))
+                    .ToList();
+            }
+            
+            totalItems = contacts.Count + collectedContacts.Count;
             var stats = new MigrationStats
             {
                 TotalMessages = totalItems,
             };
-            foreach (var contact in contacts)
+
+            foreach (var collection in new List<IContactData>[] { contacts, collectedContacts })
             {
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-                string? name = GetDisplayName(contact);
-                DoStatus($"Moving {name}...", true, StatusType.Info);
+                foreach (var contact in collection)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+                    string? name = GetDisplayName(contact);
+                    DoStatus($"Moving {name}...", true, StatusType.Info);
 
-                bool success;
-                if (Options?.DuplicateHandling == DuplicateHandling.CreateDuplicate)
-                {
-                    success = await dest.UploadContactAsync(contact, cancellationToken);
-                    if (success)
-                        stats.SuccessfulMessages++;
-                    else
-                        stats.FailedMessages++;
-                }
-                else
-                {
-                    var existing = await dest.MatchContactsAsync(contact, cancellationToken);
-                    if (existing.Count > 0)
+                    if (collection == collectedContacts)
                     {
-                        switch (Options?.DuplicateHandling)
-                        {
-                            case DuplicateHandling.Skip:
-                                DoStatus($"{name} already exists. Skipping.", true, StatusType.Info);
-                                stats.SkippedMessages++;
-                                break;
-                            case DuplicateHandling.Overwrite:
-                                DoStatus($"{name} already exists. Overwriting.", true, StatusType.Info);
-                                // Put the contact in the same groups as the original
-                                var groups = existing.SelectMany(e => e.Categories ?? new List<string>())
-                                    .Distinct()
-                                    .ToList();
-                                contact.Categories = groups;
-                                success = await dest.UploadContactAsync(contact, cancellationToken);
-
-                                if (success)
-                                {
-                                    foreach (var del in existing)
-                                    {
-                                        if (!await dest.DeleteContactAsync(del, cancellationToken))
-                                            DoStatus($"Unable to delete existing contact {GetDisplayName(del)} while merging. A duplicate has been created.", true, StatusType.Warning);
-                                    }
-                                }
-
-                                if (success)
-                                    stats.SuccessfulMessages++;
-                                else
-                                    stats.FailedMessages++;
-                                break;
-                            case DuplicateHandling.Merge:
-                                DoStatus($"{name} already exists. Merging.", true, StatusType.Info);
-                                var mergeTo = existing[0];
-                                MergeContact(contact, mergeTo);
-                                success = await dest.UpdateContactAsync(mergeTo, cancellationToken);
-                                if (success)
-                                    stats.SuccessfulMessages++;
-                                else
-                                    stats.FailedMessages++;
-                                break;
-                            default:
-                                DoStatus($"{name} already exists. Skipping.", true, StatusType.Info);
-                                stats.SkippedMessages++;
-                                break;
-                        }
+                        // Override categories for collected contacts
+                        contact.Categories = new List<string> { "Collected Contacts" };
                     }
-                    else
+
+                    bool success;
+                    if (collection == collectedContacts
+                        || Options?.DuplicateHandling == DuplicateHandling.CreateDuplicate)
                     {
-                        // Do we need to change the folder(s)
-                        if (!string.IsNullOrEmpty(Options?.ImportFolderName))
-                        {
-                            if (contact.Categories == null)
-                            {
-                                contact.Categories = new List<string> { Options.ImportFolderName };
-                            }
-                            else if (contact.Categories.Count == 0)
-                            {
-                                contact.Categories.Add(Options.ImportFolderName);
-                            }
-                            else
-                            {
-                                for (int i = 0; i < contact.Categories.Count; i++)
-                                {
-                                    contact.Categories[i] = $"{Options.ImportFolderName} - {contact.Categories[i]}";
-                                }
-                            }
-                        }
+                        UpdateFolderNames(contact);
                         success = await dest.UploadContactAsync(contact, cancellationToken);
                         if (success)
                             stats.SuccessfulMessages++;
                         else
                             stats.FailedMessages++;
                     }
+                    else
+                    {
+                        var existing = await dest.MatchContactsAsync(contact, cancellationToken);
+                        if (existing.Count > 0)
+                        {
+                            switch (Options?.DuplicateHandling)
+                            {
+                                case DuplicateHandling.Skip:
+                                    DoStatus($"{name} already exists. Skipping.", true, StatusType.Info);
+                                    stats.SkippedMessages++;
+                                    break;
+                                case DuplicateHandling.Overwrite:
+                                    DoStatus($"{name} already exists. Overwriting.", true, StatusType.Info);
+                                    // Put the contact in the same groups as the original
+                                    var groups = existing.SelectMany(e => e.Categories ?? new List<string>())
+                                        .Distinct()
+                                        .ToList();
+                                    contact.Categories = groups;
+                                    success = await dest.UploadContactAsync(contact, cancellationToken);
+
+                                    if (success)
+                                    {
+                                        foreach (var del in existing)
+                                        {
+                                            if (!await dest.DeleteContactAsync(del, cancellationToken))
+                                                DoStatus($"Unable to delete existing contact {GetDisplayName(del)} while merging. A duplicate has been created.", true, StatusType.Warning);
+                                        }
+                                    }
+
+                                    if (success)
+                                        stats.SuccessfulMessages++;
+                                    else
+                                        stats.FailedMessages++;
+                                    break;
+                                case DuplicateHandling.Merge:
+                                    DoStatus($"{name} already exists. Merging.", true, StatusType.Info);
+                                    var mergeTo = existing[0];
+                                    MergeContact(contact, mergeTo);
+                                    success = await dest.UpdateContactAsync(mergeTo, cancellationToken);
+                                    if (success)
+                                        stats.SuccessfulMessages++;
+                                    else
+                                        stats.FailedMessages++;
+                                    break;
+                                default:
+                                    DoStatus($"{name} already exists. Skipping.", true, StatusType.Info);
+                                    stats.SkippedMessages++;
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            UpdateFolderNames(contact);
+                            success = await dest.UploadContactAsync(contact, cancellationToken);
+                            if (success)
+                                stats.SuccessfulMessages++;
+                            else
+                                stats.FailedMessages++;
+                        }
+                    }
+                    completedItems++;
                 }
-                completedItems++;
             }
 
             DoStatus("Transfer complete.", true, StatusType.Info);
             Statistics = stats;
+        }
+
+        private void UpdateFolderNames(IContactData contact)
+        {
+            // Do we need to change the folder(s)
+            if (!string.IsNullOrEmpty(Options?.ImportFolderName))
+            {
+                if (contact.Categories == null)
+                {
+                    contact.Categories = new List<string> { Options.ImportFolderName };
+                }
+                else if (contact.Categories.Count == 0)
+                {
+                    contact.Categories.Add(Options.ImportFolderName);
+                }
+                else
+                {
+                    for (int i = 0; i < contact.Categories.Count; i++)
+                    {
+                        contact.Categories[i] = $"{Options.ImportFolderName} - {contact.Categories[i]}";
+                    }
+                }
+            }
         }
 
         private static string? GetDisplayName(IContactData contact)

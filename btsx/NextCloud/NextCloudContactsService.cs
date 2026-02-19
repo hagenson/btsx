@@ -119,7 +119,7 @@ namespace Btsx.NextCloud
         /// <returns>List of contact filenames.</returns>
         public async Task<List<IContactData>> ListContactsAsync(CancellationToken cancellationToken = default)
         {
-            var contacts = new List<string>();
+            var contactDataList = new List<IContactData>();
 
             try
             {
@@ -141,13 +141,26 @@ namespace Btsx.NextCloud
                     var xml = XDocument.Parse(content);
                     XNamespace d = "DAV:";
 
+                    var serverUrl = new Uri(baseUrl).GetLeftPart(UriPartial.Authority);
+
                     foreach (var responseElement in xml.Descendants(d + "response"))
                     {
                         var href = responseElement.Element(d + "href")?.Value;
                         if (!string.IsNullOrEmpty(href) && href.EndsWith(".vcf", StringComparison.OrdinalIgnoreCase))
                         {
-                            var filename = Path.GetFileName(href);
-                            contacts.Add(filename);
+                            var contactUrl = href.StartsWith("http", StringComparison.OrdinalIgnoreCase) 
+                                ? href 
+                                : $"{serverUrl}{href}";
+
+                            var getRequest = new HttpRequestMessage(HttpMethod.Get, contactUrl);
+                            var getResponse = await httpClient.SendAsync(getRequest, cancellationToken);
+
+                            if (getResponse.IsSuccessStatusCode)
+                            {
+                                var vcardContent = await getResponse.Content.ReadAsStringAsync(cancellationToken);
+                                var contactData = new VCardContactData(vcardContent);
+                                contactDataList.Add(contactData);
+                            }
                         }
                     }
                 }
@@ -157,7 +170,7 @@ namespace Btsx.NextCloud
                 // Return empty list on error
             }
 
-            throw new NotImplementedException();
+            return contactDataList;
         }
 
         /// <summary>

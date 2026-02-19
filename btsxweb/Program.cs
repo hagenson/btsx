@@ -25,8 +25,8 @@ builder.Services.AddSingleton<IPersistenceService, Btsx.Persistence.PersistenceS
 builder.Services.AddSingleton<IEncryptionService, Btsx.Persistence.EncryptionService>();
 builder.Services.AddKeyedSingleton<IOAuthService, GoogleOAuthService>("Google");
 builder.Services.AddSingleton<IMoverFactory, MoverFactory>();
-builder.Services.AddSingleton<MailMoverService>();
-builder.Services.AddHostedService(provider => provider.GetRequiredService<MailMoverService>());
+builder.Services.AddSingleton<DataMoverService>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<DataMoverService>());
 
 builder.Services.AddSignalR()
 .AddJsonProtocol(options =>

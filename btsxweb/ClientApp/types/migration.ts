@@ -4,7 +4,7 @@ export interface Creds {
     password: string;
     oAuthToken: string | null;
     useOAuth: boolean;
-    implementor: string;
+    implementer: string;
 }
 export interface MigrationRequest {
     $type: string;

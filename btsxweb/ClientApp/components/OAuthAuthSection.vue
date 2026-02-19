@@ -47,6 +47,7 @@
     interface Props {
         direction: 'Source' | 'Destination';
         serverType: string;
+        migrationType: 'Mail' | 'Contacts';
         onAuthError: (title: string, message: string) => void;
     }
 
@@ -68,6 +69,6 @@
     );
 
     function handleOAuth() {
-        authMethods.invokeOAuth(props.direction, props.onAuthError);
+        authMethods.invokeOAuth(props.direction, props.migrationType, props.onAuthError);
     }
 </script>

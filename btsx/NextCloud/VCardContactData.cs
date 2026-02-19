@@ -1,0 +1,370 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
+
+namespace Btsx.NextCloud
+{
+    public class VCardContactData : IContactData
+    {
+        public VCardContactData(string vcardContent)
+        {
+            ParseVCard(vcardContent);
+        }
+
+        public string? FormattedName { get; set; }
+        public string? FamilyName { get; set; }
+        public string? GivenName { get; set; }
+        public string? AdditionalNames { get; set; }
+        public string? HonorificPrefixes { get; set; }
+        public string? HonorificSuffixes { get; set; }
+        public string? Nickname { get; set; }
+        public string? UniqueIdentifier { get; set; }
+        public List<string>? EmailAddresses { get; set; }
+        public List<string>? PhoneNumbers { get; set; }
+        public List<string>? Addresses { get; set; }
+        public string? Organization { get; set; }
+        public string? Title { get; set; }
+        public string? Role { get; set; }
+        public DateTime? Birthday { get; set; }
+        public DateTime? Anniversary { get; set; }
+        public string? Gender { get; set; }
+        public List<string>? InstantMessagingAddresses { get; set; }
+        public string? Language { get; set; }
+        public string? TimeZone { get; set; }
+        public string? GeographicPosition { get; set; }
+        public List<string>? Categories { get; set; }
+        public string? Notes { get; set; }
+        public string? ProductId { get; set; }
+        public DateTime? Revision { get; set; }
+        public List<string>? Urls { get; set; }
+        public string? PublicKey { get; set; }
+        public string? Photo { get; set; }
+        public string? Logo { get; set; }
+        public string? Sound { get; set; }
+        public string? CalendarAddressUri { get; set; }
+        public string? CalendarUri { get; set; }
+        public string? FreeBusyUrl { get; set; }
+        public List<string>? RelatedContacts { get; set; }
+
+        private void ParseVCard(string vcardContent)
+        {
+            if (string.IsNullOrWhiteSpace(vcardContent))
+                return;
+
+            var lines = UnfoldLines(vcardContent);
+
+            foreach (var line in lines)
+            {
+                var colonIndex = line.IndexOf(':');
+                if (colonIndex <= 0)
+                    continue;
+
+                var propertyPart = line.Substring(0, colonIndex);
+                var valuePart = line.Substring(colonIndex + 1);
+
+                var semicolonIndex = propertyPart.IndexOf(';');
+                var propertyName = semicolonIndex > 0 
+                    ? propertyPart.Substring(0, semicolonIndex) 
+                    : propertyPart;
+
+                var unescapedValue = UnescapeVCardValue(valuePart);
+
+                switch (propertyName.ToUpperInvariant())
+                {
+                    case "FN":
+                        FormattedName = unescapedValue;
+                        break;
+
+                    case "N":
+                        var nameParts = SplitVCardValue(unescapedValue);
+                        if (nameParts.Length > 0) FamilyName = nameParts[0];
+                        if (nameParts.Length > 1) GivenName = nameParts[1];
+                        if (nameParts.Length > 2) AdditionalNames = nameParts[2];
+                        if (nameParts.Length > 3) HonorificPrefixes = nameParts[3];
+                        if (nameParts.Length > 4) HonorificSuffixes = nameParts[4];
+                        break;
+
+                    case "NICKNAME":
+                        Nickname = unescapedValue;
+                        break;
+
+                    case "UID":
+                        UniqueIdentifier = unescapedValue;
+                        break;
+
+                    case "EMAIL":
+                        EmailAddresses ??= new List<string>();
+                        if (!string.IsNullOrWhiteSpace(unescapedValue))
+                            EmailAddresses.Add(unescapedValue);
+                        break;
+
+                    case "TEL":
+                        PhoneNumbers ??= new List<string>();
+                        if (!string.IsNullOrWhiteSpace(unescapedValue))
+                            PhoneNumbers.Add(unescapedValue);
+                        break;
+
+                    case "ADR":
+                        Addresses ??= new List<string>();
+                        var adrParts = SplitVCardValue(unescapedValue);
+                        var address = string.Join(", ", adrParts.Where(p => !string.IsNullOrWhiteSpace(p)));
+                        if (!string.IsNullOrWhiteSpace(address))
+                            Addresses.Add(address);
+                        break;
+
+                    case "ORG":
+                        Organization = unescapedValue;
+                        break;
+
+                    case "TITLE":
+                        Title = unescapedValue;
+                        break;
+
+                    case "ROLE":
+                        Role = unescapedValue;
+                        break;
+
+                    case "BDAY":
+                        Birthday = ParseVCardDate(unescapedValue);
+                        break;
+
+                    case "ANNIVERSARY":
+                        Anniversary = ParseVCardDate(unescapedValue);
+                        break;
+
+                    case "GENDER":
+                        Gender = unescapedValue;
+                        break;
+
+                    case "IMPP":
+                        InstantMessagingAddresses ??= new List<string>();
+                        if (!string.IsNullOrWhiteSpace(unescapedValue))
+                            InstantMessagingAddresses.Add(unescapedValue);
+                        break;
+
+                    case "LANG":
+                        Language = unescapedValue;
+                        break;
+
+                    case "TZ":
+                        TimeZone = unescapedValue;
+                        break;
+
+                    case "GEO":
+                        GeographicPosition = unescapedValue;
+                        break;
+
+                    case "CATEGORIES":
+                        Categories = SplitVCardValue(unescapedValue).Where(c => !string.IsNullOrWhiteSpace(c)).ToList();
+                        break;
+
+                    case "NOTE":
+                        Notes = unescapedValue;
+                        break;
+
+                    case "PRODID":
+                        ProductId = unescapedValue;
+                        break;
+
+                    case "REV":
+                        Revision = ParseVCardDateTime(unescapedValue);
+                        break;
+
+                    case "URL":
+                        Urls ??= new List<string>();
+                        if (!string.IsNullOrWhiteSpace(unescapedValue))
+                            Urls.Add(unescapedValue);
+                        break;
+
+                    case "KEY":
+                        PublicKey = unescapedValue;
+                        break;
+
+                    case "PHOTO":
+                        Photo = unescapedValue;
+                        break;
+
+                    case "LOGO":
+                        Logo = unescapedValue;
+                        break;
+
+                    case "SOUND":
+                        Sound = unescapedValue;
+                        break;
+
+                    case "CALADRURI":
+                        CalendarAddressUri = unescapedValue;
+                        break;
+
+                    case "CALURI":
+                        CalendarUri = unescapedValue;
+                        break;
+
+                    case "FBURL":
+                        FreeBusyUrl = unescapedValue;
+                        break;
+
+                    case "RELATED":
+                        RelatedContacts ??= new List<string>();
+                        if (!string.IsNullOrWhiteSpace(unescapedValue))
+                            RelatedContacts.Add(unescapedValue);
+                        break;
+                }
+            }
+        }
+
+        private List<string> UnfoldLines(string vcardContent)
+        {
+            var lines = new List<string>();
+            var currentLine = new System.Text.StringBuilder();
+
+            using (var reader = new System.IO.StringReader(vcardContent))
+            {
+                string? line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (line.StartsWith(" ") || line.StartsWith("\t"))
+                    {
+                        currentLine.Append(line.Substring(1));
+                    }
+                    else
+                    {
+                        if (currentLine.Length > 0)
+                        {
+                            var completeLine = currentLine.ToString();
+                            if (!completeLine.Equals("BEGIN:VCARD", StringComparison.OrdinalIgnoreCase) &&
+                                !completeLine.Equals("END:VCARD", StringComparison.OrdinalIgnoreCase) &&
+                                !completeLine.StartsWith("VERSION:", StringComparison.OrdinalIgnoreCase))
+                            {
+                                lines.Add(completeLine);
+                            }
+                        }
+                        currentLine.Clear();
+                        currentLine.Append(line);
+                    }
+                }
+
+                if (currentLine.Length > 0)
+                {
+                    var completeLine = currentLine.ToString();
+                    if (!completeLine.Equals("BEGIN:VCARD", StringComparison.OrdinalIgnoreCase) &&
+                        !completeLine.Equals("END:VCARD", StringComparison.OrdinalIgnoreCase) &&
+                        !completeLine.StartsWith("VERSION:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        lines.Add(completeLine);
+                    }
+                }
+            }
+
+            return lines;
+        }
+
+        private string UnescapeVCardValue(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return string.Empty;
+
+            return value
+                .Replace("\\n", "\n")
+                .Replace("\\N", "\n")
+                .Replace("\\,", ",")
+                .Replace("\\;", ";")
+                .Replace("\\\\", "\\");
+        }
+
+        private string[] SplitVCardValue(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return Array.Empty<string>();
+
+            var parts = new List<string>();
+            var currentPart = new System.Text.StringBuilder();
+            var escaped = false;
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                var c = value[i];
+
+                if (escaped)
+                {
+                    currentPart.Append(c);
+                    escaped = false;
+                }
+                else if (c == '\\')
+                {
+                    escaped = true;
+                    currentPart.Append(c);
+                }
+                else if (c == ';')
+                {
+                    parts.Add(currentPart.ToString());
+                    currentPart.Clear();
+                }
+                else
+                {
+                    currentPart.Append(c);
+                }
+            }
+
+            parts.Add(currentPart.ToString());
+            return parts.ToArray();
+        }
+
+        private DateTime? ParseVCardDate(string dateString)
+        {
+            if (string.IsNullOrWhiteSpace(dateString))
+                return null;
+
+            dateString = dateString.Trim();
+
+            var formats = new[]
+            {
+                "yyyyMMdd",
+                "yyyy-MM-dd",
+                "yyyyMMdd'T'HHmmss'Z'",
+                "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                "yyyyMMdd'T'HHmmss",
+                "yyyy-MM-dd'T'HH:mm:ss"
+            };
+
+            foreach (var format in formats)
+            {
+                if (DateTime.TryParseExact(dateString, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
+                    return result;
+            }
+
+            if (DateTime.TryParse(dateString, out var parsedDate))
+                return parsedDate;
+
+            return null;
+        }
+
+        private DateTime? ParseVCardDateTime(string dateTimeString)
+        {
+            if (string.IsNullOrWhiteSpace(dateTimeString))
+                return null;
+
+            dateTimeString = dateTimeString.Trim();
+
+            var formats = new[]
+            {
+                "yyyyMMdd'T'HHmmss'Z'",
+                "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                "yyyyMMdd'T'HHmmss",
+                "yyyy-MM-dd'T'HH:mm:ss",
+                "yyyyMMdd",
+                "yyyy-MM-dd"
+            };
+
+            foreach (var format in formats)
+            {
+                if (DateTime.TryParseExact(dateTimeString, format, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var result))
+                    return result.ToUniversalTime();
+            }
+
+            if (DateTime.TryParse(dateTimeString, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsedDateTime))
+                return parsedDateTime.ToUniversalTime();
+
+            return null;
+        }
+    }
+}

@@ -160,7 +160,7 @@
             password: isSourceNextCloud ? authState.sourcePassword.value : '',
             oAuthToken: !isSourceNextCloud ? authState.sourceOAuthToken.value : null,
             useOAuth: !isSourceNextCloud,
-            implementor: authState.sourceServerType.value
+            implementer: authState.sourceServerType.value
         };
 
         const destinationCredentials: types.Creds = {
@@ -169,7 +169,7 @@
             password: isDestNextCloud ? authState.destPassword.value : '',
             oAuthToken: !isDestNextCloud ? authState.destOAuthToken.value : null,
             useOAuth: !isDestNextCloud,
-            implementor: authState.destServerType.value
+            implementer: authState.destServerType.value
         };
 
         const options: types.ContactMoverOptions = {

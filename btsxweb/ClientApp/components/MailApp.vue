@@ -172,7 +172,7 @@
                 password: destUseOAuth ? "" : authState.destPassword.value,
                 oAuthToken: destUseOAuth ? authState.destOAuthToken.value : null,
                 useOAuth: destUseOAuth,
-                implementor: authState.destServerType.value
+                implementer: authState.destServerType.value
             },
             sourceCredentials: {
                 server: authState.sourceServer.value,
@@ -180,7 +180,7 @@
                 password: sourceUseOAuth ? "" : authState.sourcePassword.value,
                 oAuthToken: sourceUseOAuth ? authState.sourceOAuthToken.value : null,
                 useOAuth: sourceUseOAuth,
-                implementor: authState.sourceServerType.value
+                implementer: authState.sourceServerType.value
             },
             options: {
                 deleteSource: deleteSource.value,

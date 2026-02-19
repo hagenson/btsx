@@ -26,7 +26,7 @@ export interface AuthState {
 
 export interface AuthMethods {
     authenticateServer: (type: 'source' | 'dest', migrationType: 'Mail' | 'Contacts') => Promise<void>;
-    invokeOAuth: (direction: 'Source' | 'Destination', onError: (title: string, message: string) => void) => Promise<void>;
+    invokeOAuth: (direction: 'Source' | 'Destination', migrationType: 'Mail' | 'Contacts', onError: (title: string, message: string) => void) => Promise<void>;
     resetSourceAuth: () => void;
     resetDestAuth: () => void;
 }
@@ -168,13 +168,13 @@ export function useAuth(): AuthState & AuthMethods {
         }
     }
 
-    async function invokeOAuth(direction: 'Source' | 'Destination', onError: (title: string, message: string) => void): Promise<void> {
+    async function invokeOAuth(direction: 'Source' | 'Destination', migrationType: 'Mail' | 'Contacts', onError: (title: string, message: string) => void): Promise<void> {
         try {
             implementer = direction === 'Source'
                 ? sourceServerType.value
                 : destServerType.value;
             authDirection = direction;
-            const response = await fetch(`/?handler=OAuthUrl&direction=${direction}&implementer=${implementer}`);
+            const response = await fetch(`/?handler=OAuthUrl&direction=${direction}&implementer=${implementer}&migrationType=${migrationType}`);
             if (!response.ok) {
                 const error = await response.text();
                 onError('Error', 'Error: ' + error);

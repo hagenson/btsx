@@ -29,6 +29,7 @@
                 v-else 
                 :direction="directionCapitalized" 
                 :serverType="serverTypeRef.value" 
+                :migrationType="migrationType"
                 :onAuthError="onAuthError"
             />
         </div>

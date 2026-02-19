@@ -1,8 +1,6 @@
 using AutoMapper;
 using Btsx;
 using BtsxWeb.Models;
-using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Serialization;
 using System.Collections.Concurrent;
 
 namespace BtsxWeb.Services
@@ -10,15 +8,15 @@ namespace BtsxWeb.Services
     /// <summary>
     /// Implements the logic for moving mail messages from one account to another.
     /// </summary>
-    public class MailMoverService : IHostedService, IDisposable
+    public class DataMoverService : IHostedService, IDisposable
     {
         /// <summary>
         /// Initialises the job.
         /// </summary>
-        public MailMoverService(
+        public DataMoverService(
             IServiceScopeFactory scopeFactory,
             IMapper mapper,
-            ILogger<MailMoverService> logger,
+            ILogger<DataMoverService> logger,
             IPersistenceService persistenceService,
             IMoverFactory moverFactory)
         {
@@ -93,7 +91,6 @@ namespace BtsxWeb.Services
             return (MigrationJob?)result;
         }
 
-
         /// <summary>
         /// Starts the hosted service.
         /// </summary>
@@ -133,7 +130,7 @@ namespace BtsxWeb.Services
                     await persistenceService.SaveJobAsync(job, stoppingCts!.Token);
                     await RunMigrationAsync(running);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     logger.LogError(ex, "Unexpected error starting migration job {JobId}", jobId);
                 }
@@ -164,7 +161,7 @@ namespace BtsxWeb.Services
 
         private readonly ConcurrentDictionary<string, RunningJob> jobs = new();
 
-        private readonly ILogger<MailMoverService> logger;
+        private readonly ILogger<DataMoverService> logger;
 
         private readonly IMapper mapper;
 
@@ -176,7 +173,7 @@ namespace BtsxWeb.Services
 
         private CancellationTokenSource? stoppingCts;
 
-        ~MailMoverService()
+        ~DataMoverService()
         {
             Dispose(false);
         }
@@ -195,6 +192,7 @@ namespace BtsxWeb.Services
                 GC.SuppressFinalize(this);
             }
         }
+
         private async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
@@ -254,7 +252,6 @@ namespace BtsxWeb.Services
                         job.Status = $"Successfully revoked OAuth token for {credential.Server}.";
                         job.StatusType = "Info";
                         await notifier.NotifyStatusAsync(mapper.Map<MigrationJobModel>(job), stoppingCts!.Token);
-
                     }
                     catch (Exception ex)
                     {
@@ -280,7 +277,7 @@ namespace BtsxWeb.Services
                     var mover = moverFactory.CreateMover(running.Job.Request);
 
                     mover.StatusUpdate += async (sender, e) =>
-                    { 
+                    {
                         running.Job.Status = e.Status ?? "";
                         running.Job.Progress = e.Percentage;
                         running.Job.StatusType = e.Type.ToString();

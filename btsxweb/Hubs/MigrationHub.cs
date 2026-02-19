@@ -14,7 +14,7 @@ namespace BtsxWeb.Hubs
         /// <summary>
         /// Initialises the hub.
         /// </summary>
-        public MigrationHub(MailMoverService mailMoverService, IMapper mapper)
+        public MigrationHub(DataMoverService mailMoverService, IMapper mapper)
         {
             this.mailMoverService = mailMoverService;
             this.mapper = mapper;
@@ -82,7 +82,7 @@ namespace BtsxWeb.Hubs
             await Clients.Caller.SendAsync("MigrationStarted", jobId);
         }
 
-        private readonly MailMoverService mailMoverService;
+        private readonly DataMoverService mailMoverService;
         private readonly IMapper mapper;
     }
 }

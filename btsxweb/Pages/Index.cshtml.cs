@@ -23,14 +23,14 @@ public class IndexModel : PageModel
     {
     }
 
-    public IActionResult OnGetOAuthUrl(string implementer, MigrationDirection direction)
+    public IActionResult OnGetOAuthUrl(string implementer, MigrationDirection direction, MigrationType migrationType)
     {
         var state = $"{direction}_{Guid.NewGuid():N}";
         TempData["OAuthState"] = state;
         TempData["OAuthType"] = direction;
 
         var authUrl = serviceProvider.GetRequiredKeyedService<IOAuthService>(implementer)
-            .GetAuthUrl(MigrationType.Mail, MigrationDirection.Source, state);
+            .GetAuthUrl(migrationType, direction, state);
         return new JsonResult(new { authUrl });
     }
 
