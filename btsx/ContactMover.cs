@@ -104,7 +104,16 @@ namespace Btsx
                         UpdateFolderNames(contact);
                         success = await dest.UploadContactAsync(contact, cancellationToken);
                         if (success)
+                        {
                             stats.SuccessfulMessages++;
+                            if (Options?.DeleteSource == true)
+                            {
+                                if (await source.DeleteContactAsync(contact, cancellationToken))
+                                    DoStatus($"Deleted {name} from source.", true, StatusType.Info);
+                                else
+                                    DoStatus($"Failed to delete {name} from source.", true, StatusType.Warning);
+                            }
+                        }
                         else
                             stats.FailedMessages++;
                     }
@@ -138,7 +147,16 @@ namespace Btsx
                                     }
 
                                     if (success)
+                                    {
                                         stats.SuccessfulMessages++;
+                                        if (Options?.DeleteSource == true)
+                                        {
+                                            if (await source.DeleteContactAsync(contact, cancellationToken))
+                                                DoStatus($"Deleted {name} from source.", true, StatusType.Info);
+                                            else
+                                                DoStatus($"Failed to delete {name} from source.", true, StatusType.Warning);
+                                        }
+                                    }
                                     else
                                         stats.FailedMessages++;
                                     break;
@@ -148,7 +166,16 @@ namespace Btsx
                                     MergeContact(contact, mergeTo);
                                     success = await dest.UpdateContactAsync(mergeTo, cancellationToken);
                                     if (success)
+                                    {
                                         stats.SuccessfulMessages++;
+                                        if (Options?.DeleteSource == true)
+                                        {
+                                            if (await source.DeleteContactAsync(contact, cancellationToken))
+                                                DoStatus($"Deleted {name} from source.", true, StatusType.Info);
+                                            else
+                                                DoStatus($"Failed to delete {name} from source.", true, StatusType.Warning);
+                                        }
+                                    }
                                     else
                                         stats.FailedMessages++;
                                     break;
@@ -163,7 +190,16 @@ namespace Btsx
                             UpdateFolderNames(contact);
                             success = await dest.UploadContactAsync(contact, cancellationToken);
                             if (success)
+                            {
                                 stats.SuccessfulMessages++;
+                                if (Options?.DeleteSource == true)
+                                {
+                                    if (await source.DeleteContactAsync(contact, cancellationToken))
+                                        DoStatus($"Deleted {name} from source.", true, StatusType.Info);
+                                    else
+                                        DoStatus($"Failed to delete {name} from source.", true, StatusType.Warning);
+                                }
+                            }
                             else
                                 stats.FailedMessages++;
                         }

@@ -46,6 +46,14 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="deleteSource" v-model="deleteSource">
+                                <label class="form-check-label" for="deleteSource">
+                                    Delete Source
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="importCollectedContacts" v-model="importCollectedContacts">
                                 <label class="form-check-label" for="importCollectedContacts">
                                     Import Collected Contacts
@@ -106,6 +114,7 @@
     const authMethods = inject(AUTH_METHODS_KEY) as AuthMethods;
 
     const duplicateHandling = ref<string>('Skip');
+    const deleteSource = ref<boolean>(false);
     const importCollectedContacts = ref<boolean>(false);
     const importFolderName = ref<string>('');
     const progressUpdates = ref<boolean>(true);
@@ -174,7 +183,7 @@
 
         const options: types.ContactMoverOptions = {
             duplicateHandling: duplicateHandling.value,
-            deleteSource: false,
+            deleteSource: deleteSource.value,
             importFolderName: importFolderName.value,
             importCollectedContacts: importCollectedContacts.value
         };
