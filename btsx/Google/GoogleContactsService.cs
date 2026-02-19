@@ -22,7 +22,7 @@ namespace Btsx.Google
             this.oauthToken = creds.OAuthToken;
         }
 
-        public Task<bool> ContactExistsAsync(IContactData contact, CancellationToken cancellationToken)
+        public Task<List<IContactData>> MatchContactsAsync(IContactData contact, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

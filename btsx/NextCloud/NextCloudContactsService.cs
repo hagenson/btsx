@@ -67,30 +67,17 @@ namespace Btsx.NextCloud
         /// <param name="contact">Contact to check for existence.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>True if the contact exists.</returns>
-        public async Task<bool> ContactExistsAsync(IContactData contact, CancellationToken cancellationToken = default)
-        {            
-            var filename = GenerateFilename(contact);
-            var url = $"{baseUrl}{filename}";
+        public async Task<List<IContactData>> MatchContactsAsync(
+            IContactData contact, CancellationToken cancellationToken = default)
+        {
+            if (!(contact.EmailAddresses?.Count > 0))
+                return new List<IContactData>();
+            if (contactCache == null)
+                contactCache = await ListContactsAsync(cancellationToken);
 
-            try
-            {
-                var request = new HttpRequestMessage(new HttpMethod("PROPFIND"), url);
-                request.Headers.Add("Depth", "0");
-                request.Content = new StringContent(
-                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                    "<d:propfind xmlns:d=\"DAV:\">" +
-                    "<d:prop><d:getetag /></d:prop>" +
-                    "</d:propfind>",
-                    Encoding.UTF8,
-                    "application/xml");
-
-                var response = await httpClient.SendAsync(request, cancellationToken);
-                return response.IsSuccessStatusCode;
-            }
-            catch
-            {
-                return false;
-            }
+            return contactCache.Where(c => c.EmailAddresses.Any(
+                    e => contact.EmailAddresses.Any(ce => string.Equals(ce, e, StringComparison.OrdinalIgnoreCase))))
+                .ToList();
         }
 
         /// <summary>
@@ -555,6 +542,8 @@ namespace Btsx.NextCloud
                 return false;
             }
         }
+
+        private List<IContactData>? contactCache = null;
     }
 
     /// <summary>

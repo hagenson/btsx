@@ -13,7 +13,7 @@ namespace Btsx
 
         Task<List<IContactData>> ListContactsAsync(CancellationToken cancellationToken = default);
         Task<List<IContactData>> ListCollectedContactsAsync(CancellationToken cancellationToken = default);
-        Task<bool> ContactExistsAsync(IContactData contact, CancellationToken cancellationToken);
+        Task<List<IContactData>> MatchContactsAsync(IContactData contact, CancellationToken cancellationToken);
         Task<bool> UploadContactAsync(IContactData contact, CancellationToken cancellationToken);
         Task<bool> DeleteContactAsync(IContactData contact, CancellationToken cancellationToken);
         Task<bool> UpdateContactAsync(IContactData contact, CancellationToken cancellationToken);
