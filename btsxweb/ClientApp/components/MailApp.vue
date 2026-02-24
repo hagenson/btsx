@@ -35,37 +35,44 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="deleteSource" v-model="deleteSource">
-                                <label class="form-check-label" for="deleteSource">
-                                    Delete Source
-                                </label>
+                        <div class="col-md-12">
+                            <div class="d-inline-block border-start border-end border-1 p-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="progressUpdates" v-model="progressUpdates">
+                                    <label class="form-check-label" for="progressUpdates">
+                                        Progress Updates
+                                    </label>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="foldersOnly" v-model="foldersOnly">
-                                <label class="form-check-label" for="foldersOnly">
-                                    Folders Only
-                                </label>
+                            <div class="d-inline-block border-start border-end border-1 p-2" style="padding-top: 0 !important; padding-bottom: 0 !important">
+                                <div class="d-inline-block">
+                                    <label for="duplicateHandling" class="form-label">Duplicate Handling</label>
+                                </div>
+                                <div class="d-inline-block">&nbsp;&nbsp;</div>
+                                <div class="d-inline-block">
+                                    <select class="form-select" id="duplicateHandling" v-model="duplicateHandling">
+                                        <option value="Overwrite">Overwrite</option>
+                                        <option value="Skip">Skip</option>
+                                        <option value="CreateDuplicate">Create Duplicate</option>
+                                    </select>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="progressUpdates" v-model="progressUpdates">
-                                <label class="form-check-label" for="progressUpdates">
-                                    Progress Updates
-                                </label>
+                            <div class="d-inline-block border-start border-end border-1 p-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="deleteSource" v-model="deleteSource">
+                                    <label class="form-check-label" for="deleteSource">
+                                        Delete Source
+                                    </label>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="duplicateHandling" class="form-label">Duplicate Handling</label>
-                            <select class="form-select" id="duplicateHandling" v-model="duplicateHandling">
-                                <option value="Overwrite">Overwrite</option>
-                                <option value="Skip">Skip</option>
-                                <option value="CreateDuplicate">Create Duplicate</option>
-                            </select>
+                            <div class="d-inline-block border-start border-end border-1 p-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="foldersOnly" v-model="foldersOnly">
+                                    <label class="form-check-label" for="foldersOnly">
+                                        Folders Only
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
