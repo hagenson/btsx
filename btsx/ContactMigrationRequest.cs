@@ -4,8 +4,8 @@
     {
         public override void Restarting()
         {
-            if (Options != null)
-                Options.DuplicateHandling = DuplicateHandling.Overwrite;
+            if (Options != null && Options.DuplicateHandling == DuplicateHandling.CreateDuplicate)
+                Options.DuplicateHandling = DuplicateHandling.Skip;
         }
     }
 }
