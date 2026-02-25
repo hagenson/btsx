@@ -2,12 +2,11 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.PeopleService.v1;
 using Google.Apis.PeopleService.v1.Data;
 using Google.Apis.Services;
-using static Google.Apis.PeopleService.v1.PeopleResource.ConnectionsResource.ListRequest;
 
 namespace Btsx.Google
 {
     /// <summary>
-    /// Service for fetching Google contacts using OAuth token authentication.
+    /// Implements <see cref="IContactService"/> using Google's PeopleService API.
     /// </summary>
     public class GoogleContactsService : IContactService
     {
@@ -22,17 +21,88 @@ namespace Btsx.Google
             this.oauthToken = creds.OAuthToken;
         }
 
-        public Task<List<IContactData>> MatchContactsAsync(IContactData contact, CancellationToken cancellationToken)
+        /// <inheritdoc/>
+        public async Task<bool> DeleteContactAsync(IContactData contact, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            if (contact == null)
+                throw new ArgumentNullException(nameof(contact));
+
+            var googleContact = contact as GoogleContactData;
+            if (googleContact == null)
+                throw new ArgumentException("Contact must be a GoogleContactData instance", nameof(contact));
+
+            var resourceName = googleContact.person.ResourceName;
+            if (string.IsNullOrWhiteSpace(resourceName))
+                throw new ArgumentException("Contact resource name cannot be null or empty", nameof(contact));
+
+            try
+            {
+                var credential = GoogleCredential.FromAccessToken(oauthToken);
+
+                using (var service = new PeopleServiceService(new BaseClientService.Initializer
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "BTSX Contact Fetcher"
+                }))
+                {
+                    var request = service.People.DeleteContact(resourceName);
+                    await request.ExecuteAsync(cancellationToken);
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
 
-        
-        /// <summary>
-        /// Fetches all contacts from Google Contacts API with pagination support.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>List of contacts with their vCard data.</returns>
+        /// <inheritdoc/>
+        public async Task<List<IContactData>> ListCollectedContactsAsync(CancellationToken cancellationToken)
+        {
+            var contacts = new List<IContactData>();
+
+            var credential = GoogleCredential.FromAccessToken(oauthToken);
+
+            using (var service = new PeopleServiceService(new BaseClientService.Initializer
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "BTSX Contact Fetcher"
+            }))
+            {
+                string? pageToken = null;
+                int pageNumber = 1;
+
+                do
+                {
+                    var request = service.OtherContacts.List();
+                    request.ReadMask = string.Join(",", otherContactFields);
+                    request.PageSize = 1000;
+                    request.PageToken = pageToken;
+
+                    var response = await request.ExecuteAsync(cancellationToken);
+
+                    if (response.OtherContacts != null)
+                    {
+                        foreach (var person in response.OtherContacts)
+                        {
+                            if (!contacts.Any(c => ((GoogleContactData)c).person.ResourceName == person.ResourceName))
+                            {
+                                var contactData = new GoogleContactData(person);
+                                contactData.Categories = new List<string> { "Collected Contacts" };
+                                contacts.Add(contactData);
+                            }
+                        }
+                    }
+
+                    pageToken = response.NextPageToken;
+                    pageNumber++;
+                } while (!string.IsNullOrEmpty(pageToken) && !cancellationToken.IsCancellationRequested);
+            }
+
+            return contacts;
+        }
+
+        /// <inheritdoc/>
         public async Task<List<IContactData>> ListContactsAsync(CancellationToken cancellationToken)
         {
             var contacts = new List<IContactData>();
@@ -86,100 +156,19 @@ namespace Btsx.Google
             return contacts;
         }
 
-        /// <summary>
-        /// Fetches all contacts from Google Contacts API with pagination support.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>List of contacts with their vCard data.</returns>
-        public async Task<List<IContactData>> ListCollectedContactsAsync(CancellationToken cancellationToken)
+        /// <inheritdoc/>
+        public Task<List<IContactData>> MatchContactsAsync(IContactData contact, CancellationToken cancellationToken)
         {
-            var contacts = new List<IContactData>();
-
-            var credential = GoogleCredential.FromAccessToken(oauthToken);
-
-            using (var service = new PeopleServiceService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "BTSX Contact Fetcher"
-            }))
-            {
-                string? pageToken = null;
-                int pageNumber = 1;
-
-                do
-                {
-                    var request = service.OtherContacts.List();
-                    request.ReadMask = string.Join(",", otherContactFields);
-                    request.PageSize = 1000;
-                    request.PageToken = pageToken;
-
-                    var response = await request.ExecuteAsync(cancellationToken);
-
-                    if (response.OtherContacts != null)
-                    {
-                        foreach (var person in response.OtherContacts)
-                        {
-                            if (!contacts.Any(c => ((GoogleContactData)c).person.ResourceName == person.ResourceName))
-                            {
-                                var contactData = new GoogleContactData(person);
-                                contactData.Categories = new List<string> { "Collected Contacts" };
-                                contacts.Add(contactData);
-                            }
-                        }
-                    }
-
-                    pageToken = response.NextPageToken;
-                    pageNumber++;
-                } while (!string.IsNullOrEmpty(pageToken) && !cancellationToken.IsCancellationRequested);
-            }
-
-            return contacts;
+            throw new NotImplementedException();
         }
 
+        /// <inheritdoc/>
         public Task<bool> TestConnectionAsync(CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
 
-        public Task<bool> UploadContactAsync(IContactData contact, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<bool> DeleteContactAsync(IContactData contact, CancellationToken cancellationToken)
-        {
-            if (contact == null)
-                throw new ArgumentNullException(nameof(contact));
-
-            var googleContact = contact as GoogleContactData;
-            if (googleContact == null)
-                throw new ArgumentException("Contact must be a GoogleContactData instance", nameof(contact));
-
-            var resourceName = googleContact.person.ResourceName;
-            if (string.IsNullOrWhiteSpace(resourceName))
-                throw new ArgumentException("Contact resource name cannot be null or empty", nameof(contact));
-
-            try
-            {
-                var credential = GoogleCredential.FromAccessToken(oauthToken);
-
-                using (var service = new PeopleServiceService(new BaseClientService.Initializer
-                {
-                    HttpClientInitializer = credential,
-                    ApplicationName = "BTSX Contact Fetcher"
-                }))
-                {
-                    var request = service.People.DeleteContact(resourceName);
-                    await request.ExecuteAsync(cancellationToken);
-                    return true;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
+        /// <inheritdoc/>
         public async Task<bool> UpdateContactAsync(IContactData contact, CancellationToken cancellationToken)
         {
             if (contact == null)
@@ -215,48 +204,12 @@ namespace Btsx.Google
             }
         }
 
-        private readonly string oauthToken;
-
-        private async Task<List<ContactGroup>> ListContactGroupsAsync(CancellationToken cancellationToken = default)
+        /// <inheritdoc/>
+        public Task<bool> CreateContactAsync(IContactData contact, CancellationToken cancellationToken)
         {
-            var result = new List<ContactGroup>();
-            var credential = GoogleCredential.FromAccessToken(oauthToken);
-
-            using (var service = new PeopleServiceService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "BTSX Contact Fetcher"
-            }))
-            {
-                string? pageToken = null;
-                do
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                        return result;
-                    var request = service.ContactGroups.List();
-                    request.PageSize = 1000;
-                    request.PageToken = pageToken;
-
-                    var response = await request.ExecuteAsync(cancellationToken);
-
-                    if (response.ContactGroups != null)
-                    {
-                        foreach (var group in response.ContactGroups.Where(g => !(g.Name == "all" && g.GroupType == "SYSTEM_CONTACT_GROUP")))
-                        {
-                            // Get the group with the members
-                            var greq = service.ContactGroups.Get(group.ResourceName);
-                            greq.MaxMembers = 10000;
-                            var gresp = await greq.ExecuteAsync(cancellationToken);
-                            if (gresp != null)
-                                result.Add(gresp);
-                        }
-                    }
-
-                    pageToken = response.NextPageToken;
-                } while (!string.IsNullOrEmpty(pageToken) && !cancellationToken.IsCancellationRequested);
-            }
-            return result;
+            throw new NotImplementedException();
         }
+        private readonly string oauthToken;
 
         private string[] otherContactFields = new string[]
         {
@@ -299,5 +252,46 @@ namespace Btsx.Google
             "urls",
             "userDefined"
         };
+
+        private async Task<List<ContactGroup>> ListContactGroupsAsync(CancellationToken cancellationToken = default)
+        {
+            var result = new List<ContactGroup>();
+            var credential = GoogleCredential.FromAccessToken(oauthToken);
+
+            using (var service = new PeopleServiceService(new BaseClientService.Initializer
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "BTSX Contact Fetcher"
+            }))
+            {
+                string? pageToken = null;
+                do
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                        return result;
+                    var request = service.ContactGroups.List();
+                    request.PageSize = 1000;
+                    request.PageToken = pageToken;
+
+                    var response = await request.ExecuteAsync(cancellationToken);
+
+                    if (response.ContactGroups != null)
+                    {
+                        foreach (var group in response.ContactGroups.Where(g => !(g.Name == "all" && g.GroupType == "SYSTEM_CONTACT_GROUP")))
+                        {
+                            // Get the group with the members
+                            var greq = service.ContactGroups.Get(group.ResourceName);
+                            greq.MaxMembers = 10000;
+                            var gresp = await greq.ExecuteAsync(cancellationToken);
+                            if (gresp != null)
+                                result.Add(gresp);
+                        }
+                    }
+
+                    pageToken = response.NextPageToken;
+                } while (!string.IsNullOrEmpty(pageToken) && !cancellationToken.IsCancellationRequested);
+            }
+            return result;
+        }
     }
 }

@@ -22,7 +22,7 @@
                 required
             >
         </div>
-        <div class="mb-3">
+        <div class="mb-3" v-if="serverType">
             <button 
                 type="button" 
                 class="btn btn-outline-primary" 

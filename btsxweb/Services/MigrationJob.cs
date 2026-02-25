@@ -7,46 +7,31 @@ namespace BtsxWeb.Services
     /// </summary>
     public class MigrationJob: IJob
     {
-        /// <summary>
-        /// Date and time the job terminated if is it complete.
-        /// </summary>
+        /// <inheritdoc/>
         public DateTime? EndTime { get; set; }
 
-        /// <summary>
-        /// True when the job has completed.
-        /// </summary>
+        /// <inheritdoc/>
         public bool IsCompleted { get; set; }
 
-        /// <summary>
-        /// Unique Identifier for the job.
-        /// </summary>
+        /// <inheritdoc/>
         public string Id { get; set; } = "";
 
-        /// <summary>
-        /// Percentage completion of the job.
-        /// </summary>
+        /// <inheritdoc/>
         public int Progress { get; set; }
-        
-        /// <summary>
-        /// Date and time the job started running.
-        /// </summary>
+
+        /// <inheritdoc/>
         public DateTime StartTime { get; set; } = DateTime.UtcNow;
 
-        /// <summary>
-        /// Statistics on mail messages processed by the job. 
-        /// </summary>
+        /// <inheritdoc/>
         public MigrationStats? Statistics { get; set; }
 
-        /// <summary>
-        /// Last status update text.
-        /// </summary>
+        /// <inheritdoc/>
         public string Status { get; set; } = "";
 
-        /// <summary>
-        /// Last status update type.
-        /// </summary>
+        /// <inheritdoc/>
         public string StatusType { get; set; } = "Info";
 
+        /// <inheritdoc/>
         public MigrationRequest Request { get; set; } = default!;
     }
 }

@@ -5,83 +5,26 @@ namespace Btsx.Google
     /// <summary>
     /// Represents a contact with its Person data and vCard export.
     /// </summary>
-    internal class GoogleContactData: IContactData
+    internal class GoogleContactData : IContactData
     {
+        /// <summary>
+        /// Creates the object as wrapper around an existing person.
+        /// </summary>
+        /// <param name="person">The Google person to wrap.</param>
         public GoogleContactData(Person person)
         {
             this.person = person;
         }
 
+        /// <summary>
+        /// Initialises the object with a new, blank person.
+        /// </summary>
         public GoogleContactData()
         {
             person = new Person();
         }
-       
-        /// <summary>
-        /// The Person object from Google People API.
-        /// </summary>
-        internal Person person;
-             
 
-        // IContactData implementation
-
-        public string? FormattedName
-        {
-            get => person.Names?.FirstOrDefault()?.DisplayName;
-            set
-            {
-                if (person != null)
-                {
-                    person.Names ??= new List<Name>();
-                    var name = person.Names.FirstOrDefault();
-                    if (name == null)
-                    {
-                        name = new Name();
-                        person.Names.Add(name);
-                    }
-                    name.DisplayName = value;
-                }
-            }
-        }
-
-        public string? FamilyName
-        {
-            get => person.Names?.FirstOrDefault()?.FamilyName;
-            set
-            {
-                if (person != null)
-                {
-                    person.Names ??= new List<Name>();
-                    var name = person.Names.FirstOrDefault();
-                    if (name == null)
-                    {
-                        name = new Name();
-                        person.Names.Add(name);
-                    }
-                    name.FamilyName = value;
-                }
-            }
-        }
-
-        public string? GivenName
-        {
-            get => person.Names?.FirstOrDefault()?.GivenName;
-            set
-            {
-                if (person != null)
-                {
-                    person.Names ??= new List<Name>();
-                    var name = person.Names.FirstOrDefault();
-                    if (name == null)
-                    {
-                        name = new Name();
-                        person.Names.Add(name);
-                    }
-                    name.GivenName = value;
-                }
-            }
-        }
-
+        /// <inheritdoc/>
         public string? AdditionalNames
         {
             get => person.Names?.FirstOrDefault()?.MiddleName;
@@ -101,102 +44,10 @@ namespace Btsx.Google
             }
         }
 
-        public string? HonorificPrefixes
-        {
-            get => person.Names?.FirstOrDefault()?.HonorificPrefix;
-            set
-            {
-                if (person != null)
-                {
-                    person.Names ??= new List<Name>();
-                    var name = person.Names.FirstOrDefault();
-                    if (name == null)
-                    {
-                        name = new Name();
-                        person.Names.Add(name);
-                    }
-                    name.HonorificPrefix = value;
-                }
-            }
-        }
-
-        public string? HonorificSuffixes
-        {
-            get => person.Names?.FirstOrDefault()?.HonorificSuffix;
-            set
-            {
-                if (person != null)
-                {
-                    person.Names ??= new List<Name>();
-                    var name = person.Names.FirstOrDefault();
-                    if (name == null)
-                    {
-                        name = new Name();
-                        person.Names.Add(name);
-                    }
-                    name.HonorificSuffix = value;
-                }
-            }
-        }
-
-        public string? Nickname
-        {
-            get => person.Nicknames?.FirstOrDefault()?.Value;
-            set
-            {
-                if (person != null)
-                {
-                    person.Nicknames ??= new List<Nickname>();
-                    var nickname = person.Nicknames.FirstOrDefault();
-                    if (nickname == null)
-                    {
-                        nickname = new Nickname();
-                        person.Nicknames.Add(nickname);
-                    }
-                    nickname.Value = value;
-                }
-            }
-        }
-
-        public string? UniqueIdentifier
-        {
-            get => person.ResourceName;
-            set
-            {
-                if (person != null)
-                {
-                    person.ResourceName = value;
-                }
-            }
-        }
-
-        public List<string>? EmailAddresses
-        {
-            get => person.EmailAddresses?.Select(e => e.Value).Distinct().ToList();
-            set
-            {
-                if (person != null)
-                {
-                    person.EmailAddresses = value?.Select(v => new EmailAddress { Value = v }).ToList();
-                }
-            }
-        }
-
-        public List<string>? PhoneNumbers
-        {
-            get => person.PhoneNumbers?.Select(p => p.Value).ToList();
-            set
-            {
-                if (person != null)
-                {
-                    person.PhoneNumbers = value?.Select(v => new PhoneNumber { Value = v }).ToList();
-                }
-            }
-        }
-
+        /// <inheritdoc/>
         public List<string>? Addresses
         {
-            get => person.Addresses?.Select(a => a.FormattedValue ?? 
+            get => person.Addresses?.Select(a => a.FormattedValue ??
                 $"{a.StreetAddress}, {a.City}, {a.Region} {a.PostalCode}, {a.Country}".Trim()).ToList();
             set
             {
@@ -207,102 +58,7 @@ namespace Btsx.Google
             }
         }
 
-        public string? Organization
-        {
-            get => person.Organizations?.FirstOrDefault()?.Name;
-            set
-            {
-                if (person != null)
-                {
-                    person.Organizations ??= new List<Organization>();
-                    var org = person.Organizations.FirstOrDefault();
-                    if (org == null)
-                    {
-                        org = new Organization();
-                        person.Organizations.Add(org);
-                    }
-                    org.Name = value;
-                }
-            }
-        }
-
-        public string? Title
-        {
-            get => person.Organizations?.FirstOrDefault()?.Title;
-            set
-            {
-                if (person != null)
-                {
-                    person.Organizations ??= new List<Organization>();
-                    var org = person.Organizations.FirstOrDefault();
-                    if (org == null)
-                    {
-                        org = new Organization();
-                        person.Organizations.Add(org);
-                    }
-                    org.Title = value;
-                }
-            }
-        }
-
-        public string? Role
-        {
-            get => person.Organizations?.FirstOrDefault()?.JobDescription;
-            set
-            {
-                if (person != null)
-                {
-                    person.Organizations ??= new List<Organization>();
-                    var org = person.Organizations.FirstOrDefault();
-                    if (org == null)
-                    {
-                        org = new Organization();
-                        person.Organizations.Add(org);
-                    }
-                    org.JobDescription = value;
-                }
-            }
-        }
-
-        public DateTime? Birthday
-        {
-            get
-            {
-                var birthday = person.Birthdays?.FirstOrDefault()?.Date;
-                if (birthday != null && birthday.Year.HasValue && birthday.Month.HasValue && birthday.Day.HasValue)
-                {
-                    return new DateTime(birthday.Year.Value, birthday.Month.Value, birthday.Day.Value);
-                }
-                return null;
-            }
-            set
-            {
-                if (person != null)
-                {
-                    person.Birthdays ??= new List<Birthday>();
-                    var birthday = person.Birthdays.FirstOrDefault();
-                    if (birthday == null)
-                    {
-                        birthday = new Birthday();
-                        person.Birthdays.Add(birthday);
-                    }
-                    if (value.HasValue)
-                    {
-                        birthday.Date = new Date
-                        {
-                            Year = value.Value.Year,
-                            Month = value.Value.Month,
-                            Day = value.Value.Day
-                        };
-                    }
-                    else
-                    {
-                        birthday.Date = null;
-                    }
-                }
-            }
-        }
-
+        /// <inheritdoc/>
         public DateTime? Anniversary
         {
             get
@@ -343,138 +99,47 @@ namespace Btsx.Google
             }
         }
 
-        public string? Gender
-        {
-            get => person.Genders?.FirstOrDefault()?.Value;
-            set
-            {
-                if (person != null)
-                {
-                    person.Genders ??= new List<Gender>();
-                    var gender = person.Genders.FirstOrDefault();
-                    if (gender == null)
-                    {
-                        gender = new Gender();
-                        person.Genders.Add(gender);
-                    }
-                    gender.Value = value;
-                }
-            }
-        }
-
-        public List<string>? InstantMessagingAddresses
-        {
-            get => person.ImClients?.Select(im => im.FormattedProtocol != null ? $"{im.FormattedProtocol}:{im.Username}" : im.Username).ToList();
-            set
-            {
-                if (person != null)
-                {
-                    person.ImClients = value?.Select(v => new ImClient { Username = v }).ToList();
-                }
-            }
-        }
-
-        public string? Language
-        {
-            get => person.Locales?.FirstOrDefault()?.Value;
-            set
-            {
-                if (person != null)
-                {
-                    person.Locales ??= new List<Locale>();
-                    var locale = person.Locales.FirstOrDefault();
-                    if (locale == null)
-                    {
-                        locale = new Locale();
-                        person.Locales.Add(locale);
-                    }
-                    locale.Value = value;
-                }
-            }
-        }
-
-        public string? TimeZone { get; set; }
-
-        public string? GeographicPosition { get; set; }
-
-        public List<string>? Categories { get; set; }
-
-        public string? Notes
-        {
-            get => person.Biographies?.FirstOrDefault()?.Value;
-            set
-            {
-                if (person != null)
-                {
-                    person.Biographies ??= new List<Biography>();
-                    var bio = person.Biographies.FirstOrDefault();
-                    if (bio == null)
-                    {
-                        bio = new Biography();
-                        person.Biographies.Add(bio);
-                    }
-                    bio.Value = value;
-                }
-            }
-        }
-
-        public string? ProductId { get; set; }
-
-        public DateTime? Revision
+        /// <inheritdoc/>
+        public DateTime? Birthday
         {
             get
             {
-                var metadata = person.Metadata;
-                if (metadata?.Sources != null)
+                var birthday = person.Birthdays?.FirstOrDefault()?.Date;
+                if (birthday != null && birthday.Year.HasValue && birthday.Month.HasValue && birthday.Day.HasValue)
                 {
-                    var updateTime = metadata.Sources.FirstOrDefault()?.UpdateTimeDateTimeOffset;
-                    if (updateTime != null)
-                    {
-                        return updateTime.Value.DateTime;
-                    }
+                    return new DateTime(birthday.Year.Value, birthday.Month.Value, birthday.Day.Value);
                 }
                 return null;
             }
-            set { }
-        }
-
-        public List<string>? Urls
-        {
-            get => person.Urls?.Select(u => u.Value).ToList();
             set
             {
                 if (person != null)
                 {
-                    person.Urls = value?.Select(v => new Url { Value = v }).ToList();
-                }
-            }
-        }
-
-        public string? PublicKey { get; set; }
-
-        public string? Photo
-        {
-            get => person.Photos?.FirstOrDefault()?.Url;
-            set
-            {
-                if (person != null)
-                {
-                    person.Photos ??= new List<Photo>();
-                    var photo = person.Photos.FirstOrDefault();
-                    if (photo == null)
+                    person.Birthdays ??= new List<Birthday>();
+                    var birthday = person.Birthdays.FirstOrDefault();
+                    if (birthday == null)
                     {
-                        photo = new Photo();
-                        person.Photos.Add(photo);
+                        birthday = new Birthday();
+                        person.Birthdays.Add(birthday);
                     }
-                    photo.Url = value;
+                    if (value.HasValue)
+                    {
+                        birthday.Date = new Date
+                        {
+                            Year = value.Value.Year,
+                            Month = value.Value.Month,
+                            Day = value.Value.Day
+                        };
+                    }
+                    else
+                    {
+                        birthday.Date = null;
+                    }
                 }
             }
         }
 
-        public string? Logo { get; set; }
-
-        public string? Sound { get; set; }
-
+        /// <inheritdoc/>
         public string? CalendarAddressUri
         {
             get => person.CalendarUrls?.FirstOrDefault()?.Url;
@@ -494,6 +159,7 @@ namespace Btsx.Google
             }
         }
 
+        /// <inheritdoc/>
         public string? CalendarUri
         {
             get => person.CalendarUrls?.Skip(1).FirstOrDefault()?.Url;
@@ -514,8 +180,284 @@ namespace Btsx.Google
             }
         }
 
+        /// <inheritdoc/>
+        public List<string>? Categories { get; set; }
+
+        /// <inheritdoc/>
+        public List<string>? EmailAddresses
+        {
+            get => person.EmailAddresses?.Select(e => e.Value).Distinct().ToList();
+            set
+            {
+                if (person != null)
+                {
+                    person.EmailAddresses = value?.Select(v => new EmailAddress { Value = v }).ToList();
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? FamilyName
+        {
+            get => person.Names?.FirstOrDefault()?.FamilyName;
+            set
+            {
+                if (person != null)
+                {
+                    person.Names ??= new List<Name>();
+                    var name = person.Names.FirstOrDefault();
+                    if (name == null)
+                    {
+                        name = new Name();
+                        person.Names.Add(name);
+                    }
+                    name.FamilyName = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? FormattedName
+        {
+            get => person.Names?.FirstOrDefault()?.DisplayName;
+            set
+            {
+                if (person != null)
+                {
+                    person.Names ??= new List<Name>();
+                    var name = person.Names.FirstOrDefault();
+                    if (name == null)
+                    {
+                        name = new Name();
+                        person.Names.Add(name);
+                    }
+                    name.DisplayName = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
         public string? FreeBusyUrl { get; set; }
 
+        /// <inheritdoc/>
+        public string? Gender
+        {
+            get => person.Genders?.FirstOrDefault()?.Value;
+            set
+            {
+                if (person != null)
+                {
+                    person.Genders ??= new List<Gender>();
+                    var gender = person.Genders.FirstOrDefault();
+                    if (gender == null)
+                    {
+                        gender = new Gender();
+                        person.Genders.Add(gender);
+                    }
+                    gender.Value = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? GeographicPosition { get; set; }
+
+        /// <inheritdoc/>
+        public string? GivenName
+        {
+            get => person.Names?.FirstOrDefault()?.GivenName;
+            set
+            {
+                if (person != null)
+                {
+                    person.Names ??= new List<Name>();
+                    var name = person.Names.FirstOrDefault();
+                    if (name == null)
+                    {
+                        name = new Name();
+                        person.Names.Add(name);
+                    }
+                    name.GivenName = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? HonorificPrefixes
+        {
+            get => person.Names?.FirstOrDefault()?.HonorificPrefix;
+            set
+            {
+                if (person != null)
+                {
+                    person.Names ??= new List<Name>();
+                    var name = person.Names.FirstOrDefault();
+                    if (name == null)
+                    {
+                        name = new Name();
+                        person.Names.Add(name);
+                    }
+                    name.HonorificPrefix = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? HonorificSuffixes
+        {
+            get => person.Names?.FirstOrDefault()?.HonorificSuffix;
+            set
+            {
+                if (person != null)
+                {
+                    person.Names ??= new List<Name>();
+                    var name = person.Names.FirstOrDefault();
+                    if (name == null)
+                    {
+                        name = new Name();
+                        person.Names.Add(name);
+                    }
+                    name.HonorificSuffix = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public List<string>? InstantMessagingAddresses
+        {
+            get => person.ImClients?.Select(im => im.FormattedProtocol != null ? $"{im.FormattedProtocol}:{im.Username}" : im.Username).ToList();
+            set
+            {
+                if (person != null)
+                {
+                    person.ImClients = value?.Select(v => new ImClient { Username = v }).ToList();
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? Language
+        {
+            get => person.Locales?.FirstOrDefault()?.Value;
+            set
+            {
+                if (person != null)
+                {
+                    person.Locales ??= new List<Locale>();
+                    var locale = person.Locales.FirstOrDefault();
+                    if (locale == null)
+                    {
+                        locale = new Locale();
+                        person.Locales.Add(locale);
+                    }
+                    locale.Value = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? Logo { get; set; }
+
+        /// <inheritdoc/>
+        public string? Nickname
+        {
+            get => person.Nicknames?.FirstOrDefault()?.Value;
+            set
+            {
+                if (person != null)
+                {
+                    person.Nicknames ??= new List<Nickname>();
+                    var nickname = person.Nicknames.FirstOrDefault();
+                    if (nickname == null)
+                    {
+                        nickname = new Nickname();
+                        person.Nicknames.Add(nickname);
+                    }
+                    nickname.Value = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? Notes
+        {
+            get => person.Biographies?.FirstOrDefault()?.Value;
+            set
+            {
+                if (person != null)
+                {
+                    person.Biographies ??= new List<Biography>();
+                    var bio = person.Biographies.FirstOrDefault();
+                    if (bio == null)
+                    {
+                        bio = new Biography();
+                        person.Biographies.Add(bio);
+                    }
+                    bio.Value = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? Organization
+        {
+            get => person.Organizations?.FirstOrDefault()?.Name;
+            set
+            {
+                if (person != null)
+                {
+                    person.Organizations ??= new List<Organization>();
+                    var org = person.Organizations.FirstOrDefault();
+                    if (org == null)
+                    {
+                        org = new Organization();
+                        person.Organizations.Add(org);
+                    }
+                    org.Name = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public List<string>? PhoneNumbers
+        {
+            get => person.PhoneNumbers?.Select(p => p.Value).ToList();
+            set
+            {
+                if (person != null)
+                {
+                    person.PhoneNumbers = value?.Select(v => new PhoneNumber { Value = v }).ToList();
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? Photo
+        {
+            get => person.Photos?.FirstOrDefault()?.Url;
+            set
+            {
+                if (person != null)
+                {
+                    person.Photos ??= new List<Photo>();
+                    var photo = person.Photos.FirstOrDefault();
+                    if (photo == null)
+                    {
+                        photo = new Photo();
+                        person.Photos.Add(photo);
+                    }
+                    photo.Url = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? ProductId { get; set; }
+
+        /// <inheritdoc/>
+        public string? PublicKey { get; set; }
+
+        /// <inheritdoc/>
         public List<string>? RelatedContacts
         {
             get => person.Relations?.Select(r => r.Person).ToList();
@@ -527,6 +469,101 @@ namespace Btsx.Google
                 }
             }
         }
-    }
 
+        /// <inheritdoc/>
+        public DateTime? Revision
+        {
+            get
+            {
+                var metadata = person.Metadata;
+                if (metadata?.Sources != null)
+                {
+                    var updateTime = metadata.Sources.FirstOrDefault()?.UpdateTimeDateTimeOffset;
+                    if (updateTime != null)
+                    {
+                        return updateTime.Value.DateTime;
+                    }
+                }
+                return null;
+            }
+            set { }
+        }
+
+        /// <inheritdoc/>
+        public string? Role
+        {
+            get => person.Organizations?.FirstOrDefault()?.JobDescription;
+            set
+            {
+                if (person != null)
+                {
+                    person.Organizations ??= new List<Organization>();
+                    var org = person.Organizations.FirstOrDefault();
+                    if (org == null)
+                    {
+                        org = new Organization();
+                        person.Organizations.Add(org);
+                    }
+                    org.JobDescription = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? Sound { get; set; }
+
+        /// <inheritdoc/>
+        public string? TimeZone { get; set; }
+
+        /// <inheritdoc/>
+        public string? Title
+        {
+            get => person.Organizations?.FirstOrDefault()?.Title;
+            set
+            {
+                if (person != null)
+                {
+                    person.Organizations ??= new List<Organization>();
+                    var org = person.Organizations.FirstOrDefault();
+                    if (org == null)
+                    {
+                        org = new Organization();
+                        person.Organizations.Add(org);
+                    }
+                    org.Title = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public string? UniqueIdentifier
+        {
+            get => person.ResourceName;
+            set
+            {
+                if (person != null)
+                {
+                    person.ResourceName = value;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public List<string>? Urls
+        {
+            get => person.Urls?.Select(u => u.Value).ToList();
+            set
+            {
+                if (person != null)
+                {
+                    person.Urls = value?.Select(v => new Url { Value = v }).ToList();
+                }
+            }
+        }
+
+        /// <summary>
+        /// The Person object from Google People API.
+        /// </summary>
+        internal Person person;
+    }
 }

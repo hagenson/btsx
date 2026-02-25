@@ -49,7 +49,6 @@ namespace BtsxWeb.Services
         /// Delete a running job.
         /// </summary>
         /// <param name="jobId">ID of the job to delete.</param>
-        /// <returns>Awaitable task.</returns>
         public async Task DeleteJob(string jobId)
         {
             var job = await GetJob(jobId);
@@ -67,9 +66,7 @@ namespace BtsxWeb.Services
             await persistenceService.DeleteJobAsync(jobId, stoppingCts!.Token);
         }
 
-        /// <summary>
-        /// Cleans up the service resources.
-        /// </summary>
+        /// <inheritdoc/>
         public void Dispose()
         {
             Dispose(true);
@@ -91,9 +88,7 @@ namespace BtsxWeb.Services
             return (MigrationJob?)result;
         }
 
-        /// <summary>
-        /// Starts the hosted service.
-        /// </summary>
+        /// <inheritdoc/>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             stoppingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -139,9 +134,7 @@ namespace BtsxWeb.Services
             return jobId;
         }
 
-        /// <summary>
-        /// Stops the hosted service.
-        /// </summary>
+        /// <inheritdoc/>
         public async Task StopAsync(CancellationToken cancellationToken)
         {
             if (executingTask == null)
@@ -165,8 +158,8 @@ namespace BtsxWeb.Services
 
         private readonly IMapper mapper;
 
-        private readonly IPersistenceService persistenceService;
         private readonly IMoverFactory moverFactory;
+        private readonly IPersistenceService persistenceService;
         private readonly IServiceScopeFactory scopeFactory;
 
         private Task? executingTask;

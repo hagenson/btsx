@@ -32,7 +32,7 @@ export interface AuthMethods {
 }
 
 export function useAuth(): AuthState & AuthMethods {
-    const sourceServerType = ref<string>('NextCloud');
+    const sourceServerType = ref<string>('');
     const sourceServer = ref<string>('');
     const sourceUser = ref<string>('');
     const sourcePassword = ref<string>('');
@@ -42,7 +42,7 @@ export function useAuth(): AuthState & AuthMethods {
     const sourceAuthSuccess = ref<boolean>(false);
     const sourceAuthenticating = ref<boolean>(false);
 
-    const destServerType = ref<string>('NextCloud');
+    const destServerType = ref<string>('');
     const destServer = ref<string>('');
     const destUser = ref<string>('');
     const destPassword = ref<string>('');
@@ -57,9 +57,6 @@ export function useAuth(): AuthState & AuthMethods {
 
     let implementer: string | undefined = undefined;
     let authDirection: string | undefined = undefined;
-
-    const isSourceNextCloud = computed(() => sourceServerType.value === 'NextCloud');
-    const isDestNextCloud = computed(() => destServerType.value === 'NextCloud');
 
     watch(sourceServerType, (newType) => {
         if (newType === 'Google') {
@@ -88,17 +85,13 @@ export function useAuth(): AuthState & AuthMethods {
     });
 
     watch([sourceServer, sourceUser, sourcePassword], () => {
-        if (isSourceNextCloud.value) {
             sourceAuthStatus.value = '';
             sourceAuthSuccess.value = false;
-        }
     });
 
     watch([destServer, destUser, destPassword], () => {
-        if (isDestNextCloud.value) {
             destAuthStatus.value = '';
             destAuthSuccess.value = false;
-        }
     });
 
     async function authenticateServer(type: 'source' | 'dest', migrationType: 'Mail' | 'Contacts'): Promise<void> {

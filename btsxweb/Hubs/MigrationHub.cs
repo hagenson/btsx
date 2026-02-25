@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.SignalR;
 namespace BtsxWeb.Hubs
 {
     /// <summary>
-    /// Provides the SignalR hub for the application.
+    /// Provides a SignalR hub for managing migration jobs.
     /// </summary>
     public class MigrationHub : Hub
     {
@@ -24,7 +24,6 @@ namespace BtsxWeb.Hubs
         /// Cancels a running migration job.
         /// </summary>
         /// <param name="jobId">ID of the job to cancel.</param>
-        /// <returns>Awaitable Task.</returns>
         public async Task CancelMigration(string jobId)
         {
             var cancelled = await mailMoverService.CancelMigrationAsync(jobId);
@@ -38,7 +37,6 @@ namespace BtsxWeb.Hubs
         /// Deletes a migration job.
         /// </summary>
         /// <param name="jobId">ID of the job to delete.</param>
-        /// <returns>Awaitable Task.</returns>
         public async Task DeleteJob(string jobId)
         {
             await mailMoverService.DeleteJob(jobId);
@@ -64,7 +62,6 @@ namespace BtsxWeb.Hubs
         /// Adds the current connection to the specified job group.
         /// </summary>
         /// <param name="jobId">The identifier of the job group to join. </param>
-        /// <returns>Awaitable Task.</returns>
         public async Task JoinJobGroup(string jobId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, jobId, Context.ConnectionAborted);
@@ -74,7 +71,6 @@ namespace BtsxWeb.Hubs
         /// Starts a migration job.
         /// </summary>
         /// <param name="request">Parameters for the job.</param>
-        /// <returns>Awaitable Task.</returns>
         public async Task StartMigration(MigrationRequest request)
         {
             var jobId = mailMoverService.StartMigration(request);

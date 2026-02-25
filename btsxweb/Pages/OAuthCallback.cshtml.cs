@@ -86,6 +86,6 @@ public class OAuthCallbackModel : PageModel
         return Page();
     }
 
-    private readonly IServiceProvider serviceProvider;
     private readonly ILogger<OAuthCallbackModel> logger;
+    private readonly IServiceProvider serviceProvider;
 }

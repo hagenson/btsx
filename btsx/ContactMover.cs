@@ -3,52 +3,20 @@ using System.Reflection;
 namespace Btsx
 {
     /// <summary>
-    /// Contains the logic to transfer contacts from one account to another.
+    /// Implements the logic to transfer contacts from one account to another.
     /// </summary>
-    public class ContactMover: MoverBase, IMover<Creds, ContactMoverOptions>
+    public class ContactMover : MoverBase, IMover<Creds, ContactMoverOptions>
     {
-
-        /// <summary>
-        /// Specifies the destination account.
-        /// </summary>
+        /// <inheritdoc/>
         public Creds? DestinationCredentials { get; set; }
 
-        
-        /// <summary>
-        /// The credentials for the source account.
-        /// </summary>
-        public Creds? SourceCredentials { get; set; }
-
+        /// <inheritdoc/>
         public ContactMoverOptions? Options { get; set; }
 
-        /// <summary>
-        /// Tests that the provided credentials will successfully authenticate.
-        /// </summary>
-        /// <param name="creds">Account credentials to test.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if the account was authenticated successfully.</returns>
-        public override Task<bool> TestAuthenticationAsync(
-            Creds creds,
-            CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                IContactService service = ContactServiceFactory.CreateContactService(creds);
-                return service.TestConnectionAsync(cancellationToken);
-            }
-            catch
-            {
-                return Task.FromResult(false);
-            }
-        }
-
-        
-        /// <summary>
-        /// Runs the configured contact transfer job.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Awaitable task.</returns>
-        public async override Task ExecuteAsync(CancellationToken cancellationToken)
+        /// <inheritdoc/>
+        public Creds? SourceCredentials { get; set; }
+        /// <inheritdoc/>
+        public override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             if (SourceCredentials == null)
                 throw new InvalidOperationException($"{nameof(SourceCredentials)} must be specified.");
@@ -67,7 +35,7 @@ namespace Btsx
             DoStatus($"Listing contacts from {SourceCredentials.Server}...", false, StatusType.Info);
             var contacts = (await source.ListContactsAsync(cancellationToken))
                 .ToList();
-            
+
             var collectedContacts = new List<IContactData>();
             if (Options?.ImportCollectedContacts == true)
             {
@@ -75,11 +43,11 @@ namespace Btsx
                 collectedContacts = (await source.ListCollectedContactsAsync(cancellationToken))
                     .ToList();
             }
-            
+
             totalItems = contacts.Count + collectedContacts.Count;
             var stats = new MigrationStats
             {
-                TotalMessages = totalItems,
+                TotalItems = totalItems,
             };
 
             foreach (var collection in new List<IContactData>[] { contacts, collectedContacts })
@@ -102,10 +70,10 @@ namespace Btsx
                         || Options?.DuplicateHandling == DuplicateHandling.CreateDuplicate)
                     {
                         UpdateFolderNames(contact);
-                        success = await dest.UploadContactAsync(contact, cancellationToken);
+                        success = await dest.CreateContactAsync(contact, cancellationToken);
                         if (success)
                         {
-                            stats.SuccessfulMessages++;
+                            stats.SuccessfulItems++;
                             if (Options?.DeleteSource == true)
                             {
                                 if (await source.DeleteContactAsync(contact, cancellationToken))
@@ -115,7 +83,7 @@ namespace Btsx
                             }
                         }
                         else
-                            stats.FailedMessages++;
+                            stats.FailedItems++;
                     }
                     else
                     {
@@ -126,8 +94,9 @@ namespace Btsx
                             {
                                 case DuplicateHandling.Skip:
                                     DoStatus($"{name} already exists. Skipping.", true, StatusType.Info);
-                                    stats.SkippedMessages++;
+                                    stats.SkippedItems++;
                                     break;
+
                                 case DuplicateHandling.Overwrite:
                                     DoStatus($"{name} already exists. Overwriting.", true, StatusType.Info);
                                     // Put the contact in the same groups as the original
@@ -135,7 +104,7 @@ namespace Btsx
                                         .Distinct()
                                         .ToList();
                                     contact.Categories = groups;
-                                    success = await dest.UploadContactAsync(contact, cancellationToken);
+                                    success = await dest.CreateContactAsync(contact, cancellationToken);
 
                                     if (success)
                                     {
@@ -148,7 +117,7 @@ namespace Btsx
 
                                     if (success)
                                     {
-                                        stats.SuccessfulMessages++;
+                                        stats.SuccessfulItems++;
                                         if (Options?.DeleteSource == true)
                                         {
                                             if (await source.DeleteContactAsync(contact, cancellationToken))
@@ -158,8 +127,9 @@ namespace Btsx
                                         }
                                     }
                                     else
-                                        stats.FailedMessages++;
+                                        stats.FailedItems++;
                                     break;
+
                                 case DuplicateHandling.Merge:
                                     DoStatus($"{name} already exists. Merging.", true, StatusType.Info);
                                     var mergeTo = existing[0];
@@ -167,7 +137,7 @@ namespace Btsx
                                     success = await dest.UpdateContactAsync(mergeTo, cancellationToken);
                                     if (success)
                                     {
-                                        stats.SuccessfulMessages++;
+                                        stats.SuccessfulItems++;
                                         if (Options?.DeleteSource == true)
                                         {
                                             if (await source.DeleteContactAsync(contact, cancellationToken))
@@ -177,21 +147,22 @@ namespace Btsx
                                         }
                                     }
                                     else
-                                        stats.FailedMessages++;
+                                        stats.FailedItems++;
                                     break;
+
                                 default:
                                     DoStatus($"{name} already exists. Skipping.", true, StatusType.Info);
-                                    stats.SkippedMessages++;
+                                    stats.SkippedItems++;
                                     break;
                             }
                         }
                         else
                         {
                             UpdateFolderNames(contact);
-                            success = await dest.UploadContactAsync(contact, cancellationToken);
+                            success = await dest.CreateContactAsync(contact, cancellationToken);
                             if (success)
                             {
-                                stats.SuccessfulMessages++;
+                                stats.SuccessfulItems++;
                                 if (Options?.DeleteSource == true)
                                 {
                                     if (await source.DeleteContactAsync(contact, cancellationToken))
@@ -201,7 +172,7 @@ namespace Btsx
                                 }
                             }
                             else
-                                stats.FailedMessages++;
+                                stats.FailedItems++;
                         }
                     }
                     completedItems++;
@@ -212,29 +183,21 @@ namespace Btsx
             Statistics = stats;
         }
 
-        private void UpdateFolderNames(IContactData contact)
+        /// <inheritdoc/>
+        public override Task<bool> TestAuthenticationAsync(
+            Creds creds,
+            CancellationToken cancellationToken = default)
         {
-            // Do we need to change the folder(s)
-            if (!string.IsNullOrEmpty(Options?.ImportFolderName))
+            try
             {
-                if (contact.Categories == null)
-                {
-                    contact.Categories = new List<string> { Options.ImportFolderName };
-                }
-                else if (contact.Categories.Count == 0)
-                {
-                    contact.Categories.Add(Options.ImportFolderName);
-                }
-                else
-                {
-                    for (int i = 0; i < contact.Categories.Count; i++)
-                    {
-                        contact.Categories[i] = $"{Options.ImportFolderName} - {contact.Categories[i]}";
-                    }
-                }
+                IContactService service = ContactServiceFactory.CreateContactService(creds);
+                return service.TestConnectionAsync(cancellationToken);
+            }
+            catch
+            {
+                return Task.FromResult(false);
             }
         }
-
         private static string? GetDisplayName(IContactData contact)
         {
             return contact.FormattedName
@@ -265,16 +228,6 @@ namespace Btsx
             {
                 MergeDateField(prop, source, dest);
             }
-
-        }
-
-        private void MergeStringField(PropertyInfo prop, IContactData source, IContactData dest)
-        {
-            var cur = (string?)prop.GetValue(dest);
-            var upd = (string?)prop.GetValue(source);
-            if (string.IsNullOrWhiteSpace(cur)
-                    && !string.IsNullOrWhiteSpace(upd))
-                prop.SetValue(dest, upd);
         }
 
         private void MergeDateField(PropertyInfo prop, IContactData source, IContactData dest)
@@ -301,5 +254,36 @@ namespace Btsx
             }
         }
 
+        private void MergeStringField(PropertyInfo prop, IContactData source, IContactData dest)
+        {
+            var cur = (string?)prop.GetValue(dest);
+            var upd = (string?)prop.GetValue(source);
+            if (string.IsNullOrWhiteSpace(cur)
+                    && !string.IsNullOrWhiteSpace(upd))
+                prop.SetValue(dest, upd);
+        }
+
+        private void UpdateFolderNames(IContactData contact)
+        {
+            // Do we need to change the folder(s)
+            if (!string.IsNullOrEmpty(Options?.ImportFolderName))
+            {
+                if (contact.Categories == null)
+                {
+                    contact.Categories = new List<string> { Options.ImportFolderName };
+                }
+                else if (contact.Categories.Count == 0)
+                {
+                    contact.Categories.Add(Options.ImportFolderName);
+                }
+                else
+                {
+                    for (int i = 0; i < contact.Categories.Count; i++)
+                    {
+                        contact.Categories[i] = $"{Options.ImportFolderName} - {contact.Categories[i]}";
+                    }
+                }
+            }
+        }
     }
 }

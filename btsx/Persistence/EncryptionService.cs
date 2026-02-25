@@ -36,9 +36,7 @@ namespace Btsx.Persistence
             }
         }
 
-        /// <summary>
-        /// Decrypts a previously encrypted value.
-        /// </summary>
+        /// <inheritdoc/>
         public string? Decrypt(string? cipherText)
         {
             if (string.IsNullOrEmpty(cipherText))
@@ -71,9 +69,7 @@ namespace Btsx.Persistence
             }
         }
 
-        /// <summary>
-        /// Encrypts a supplied string.
-        /// </summary>
+        /// <inheritdoc/>
         public string? Encrypt(string? plainText)
         {
             if (string.IsNullOrEmpty(plainText))

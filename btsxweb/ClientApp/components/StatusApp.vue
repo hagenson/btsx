@@ -123,10 +123,10 @@
         endTime?: string;
         isCompleted: boolean;
         sourceServer?: string;
-        totalMessages: number;
-        successfulMessages: number;
-        skippedMessages: number;
-        failedMessages: number;
+        totalItems: number;
+        successfulItems: number;
+        skippedItems: number;
+        failedItems: number;
     }
 
     const props = defineProps<Props>();
@@ -168,13 +168,13 @@
                             info.statusType === "Warning" ? "text-warning" : "text-success"
                     });
 
-                    if (info.totalMessages || info.successfulMessages || info.skippedMessages || info.failedMessages) {
+                    if (info.totalItems || info.successfulItems || info.skippedItems || info.failedItems) {
                         showStatistics.value = true;
                         statistics.value = {
-                            total: info.totalMessages,
-                            success: info.successfulMessages,
-                            skipped: info.skippedMessages,
-                            failed: info.failedMessages
+                            total: info.totalItems,
+                            success: info.successfulItems,
+                            skipped: info.skippedItems,
+                            failed: info.failedItems
                         };
                     }
                 }
@@ -218,13 +218,13 @@
                 }
             });
 
-            if (job.totalMessages) {
+            if (job.totalItems) {
                 showStatistics.value = true;
                 statistics.value = {
-                    total: job.totalMessages,
-                    success: job.successfulMessages || 0,
-                    skipped: job.skippedMessages || 0,
-                    failed: job.failedMessages || 0
+                    total: job.totalItems,
+                    success: job.successfulItems || 0,
+                    skipped: job.skippedItems || 0,
+                    failed: job.failedItems || 0
                 };
             }
         });

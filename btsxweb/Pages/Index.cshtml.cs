@@ -2,7 +2,6 @@ using Btsx;
 using BtsxWeb.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Options;
 
 namespace BtsxWeb.Pages;
 
@@ -52,7 +51,6 @@ public class IndexModel : PageModel
 
         try
         {
-
             var mover = moverFactory.CreateAuthenticator(request.MigrationType);
             var success = await mover.TestAuthenticationAsync(creds, HttpContext.RequestAborted);
             if (success)
@@ -71,7 +69,7 @@ public class IndexModel : PageModel
         }
     }
 
-    private readonly IServiceProvider serviceProvider;
-    private readonly IMoverFactory moverFactory;
     private readonly ILogger<IndexModel> logger;
+    private readonly IMoverFactory moverFactory;
+    private readonly IServiceProvider serviceProvider;
 }

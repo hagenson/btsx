@@ -1,7 +1,7 @@
 ﻿namespace BtsxWeb.Models
 {
     /// <summary>
-    /// Encapsulates
+    /// Encapsulates information about a migration job for UI display.
     /// </summary>
     public class MigrationJobModel
     {
@@ -10,7 +10,11 @@
         /// </summary>
         public DateTime? EndTime { get; set; }
 
-        public int FailedMessages { get; set; }
+        /// <summary>
+        /// The number of items that could not be moved.
+        /// </summary>
+        public int FailedItems { get; set; }
+
         /// <summary>
         /// True when the job has completed.
         /// </summary>
@@ -32,9 +36,9 @@
         public bool ProgressUpdates { get; set; }
 
         /// <summary>
-        /// Number of mail messages skipped.
+        /// Number of items skipped.
         /// </summary>
-        public int SkippedMessages { get; set; }
+        public int SkippedItems { get; set; }
 
         /// <summary>
         /// Host name of the source server.
@@ -57,13 +61,13 @@
         public string StatusType { get; set; } = "";
 
         /// <summary>
-        /// Number of messages successfully copied.
+        /// Number of items successfully copied.
         /// </summary>
-        public int SuccessfulMessages { get; set; }
+        public int SuccessfulItems { get; set; }
 
         /// <summary>
-        /// Total number of messages processed.
+        /// Total number of items processed.
         /// </summary>
-        public int TotalMessages { get; set; }
+        public int TotalItems { get; set; }
     }
 }

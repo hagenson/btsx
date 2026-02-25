@@ -10,12 +10,11 @@ namespace Btsx
     public class MailMover: MoverBase, IMover<Creds, MailMoverOptions>
     {
 
-        
-        /// <summary>
-        /// Specifies the destination email account.
-        /// </summary>
+
+        /// <inheritdoc/>
         public Creds? DestinationCredentials { get; set; }
 
+        /// <inheritdoc/>
         public MailMoverOptions? Options {
             get => options;
             set
@@ -24,21 +23,14 @@ namespace Btsx
                 SetSourceAccess();
             }
         }
-        
-        
 
-        /// <summary>
-        /// The credentials for the source account.
-        /// </summary>
+
+
+        /// <inheritdoc/>
         public Creds? SourceCredentials { get; set; }
 
-        
-        /// <summary>
-        /// Tests that the provided credentials will successfully authenticate.
-        /// </summary>
-        /// <param name="creds">Mail account credentials to test.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if the account was authenticated successfully.</returns>
+
+        /// <inheritdoc/>
         public async override Task<bool> TestAuthenticationAsync(Creds creds, CancellationToken cancellationToken = default)
         {
             try
@@ -56,11 +48,7 @@ namespace Btsx
             }
         }
 
-        /// <summary>
-        /// Runs the configures migration job.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Awaitable task.</returns>
+        /// <inheritdoc/>
         public async override Task ExecuteAsync(CancellationToken cancellationToken)
         {
             if (SourceCredentials == null)
@@ -323,7 +311,7 @@ namespace Btsx
             while (uids.Count > 0)
             {
                 var uid = uids.First();
-                stats.TotalMessages++;
+                stats.TotalItems++;
                 try
                 {
                     var message = await srcFolder.GetMessageAsync(uid, cancellationToken);
@@ -368,11 +356,11 @@ namespace Btsx
                         if (Options?.DeleteSource == true)
                             await srcFolder.AddFlagsAsync(uid, MessageFlags.Deleted, true, cancellationToken);
 
-                        stats.SuccessfulMessages++;
+                        stats.SuccessfulItems++;
                     }
                     else
                     {
-                        stats.SkippedMessages++;
+                        stats.SkippedItems++;
                     }
                     uids.RemoveAt(0);
                     completedItems++;
@@ -400,7 +388,7 @@ namespace Btsx
                                 await dstFolder.OpenAsync(FolderAccess.ReadWrite, cancellationToken);
                                 DoStatus($"Reconnected.", false, StatusType.Warning);
                             }
-                            stats.TotalMessages--;
+                            stats.TotalItems--;
                         }
                         catch (Exception e)
                         {
@@ -410,7 +398,7 @@ namespace Btsx
                     }
                     else
                     {
-                        stats.FailedMessages++;
+                        stats.FailedItems++;
                         DoStatus($"Failed to migrate message with header {curHdr}: {ex.Message}", false, StatusType.Warning);
                     }
                 }

@@ -61,12 +61,7 @@ namespace Btsx.NextCloud
             this.httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authHeader);
         }
 
-        /// <summary>
-        /// Checks if a contact already exists on the server using PROPFIND.
-        /// </summary>
-        /// <param name="contact">Contact to check for existence.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if the contact exists.</returns>
+        /// <inheritdoc/>
         public async Task<List<IContactData>> MatchContactsAsync(
             IContactData contact, CancellationToken cancellationToken = default)
         {
@@ -75,17 +70,12 @@ namespace Btsx.NextCloud
             if (contactCache == null)
                 contactCache = await ListContactsAsync(cancellationToken);
 
-            return contactCache.Where(c => c.EmailAddresses.Any(
-                    e => contact.EmailAddresses.Any(ce => string.Equals(ce, e, StringComparison.OrdinalIgnoreCase))))
+            return contactCache.Where(c => c.EmailAddresses?.Any(
+                    e => contact.EmailAddresses.Any(ce => string.Equals(ce, e, StringComparison.OrdinalIgnoreCase))) == true)
                 .ToList();
         }
 
-        /// <summary>
-        /// Deletes a contact from the server.
-        /// </summary>
-        /// <param name="filename">Filename of the contact to delete.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if deletion was successful.</returns>
+        /// <inheritdoc/>
         public async Task<bool> DeleteContactAsync(IContactData contact, CancellationToken cancellationToken = default)
         {
             var filename = GenerateFilename(contact);
@@ -112,11 +102,7 @@ namespace Btsx.NextCloud
             httpClient?.Dispose();
         }
 
-        /// <summary>
-        /// Lists all contacts in the addressbook using PROPFIND.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>List of contact filenames.</returns>
+        /// <inheritdoc/>
         public async Task<List<IContactData>> ListContactsAsync(CancellationToken cancellationToken = default)
         {
             var contactDataList = new List<IContactData>();
@@ -173,11 +159,7 @@ namespace Btsx.NextCloud
             return contactDataList;
         }
 
-        /// <summary>
-        /// Tests the connection to the NextCloud CardDAV server.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if the connection and authentication are successful.</returns>
+        /// <inheritdoc/>
         public async Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)
         {
             try
@@ -201,14 +183,8 @@ namespace Btsx.NextCloud
             }
         }
 
-        /// <summary>
-        /// Uploads a single contact to NextCloud in vCard 3.0 format.
-        /// </summary>
-        /// <param name="vcard">vCard 3.0 formatted string.</param>
-        /// <param name="filename">Filename for the contact (e.g., "contact-123.vcf").</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if upload was successful.</returns>
-        public async Task<bool> UploadContactAsync(IContactData contact, CancellationToken cancellationToken = default)
+        /// <inheritdoc/>
+        public async Task<bool> CreateContactAsync(IContactData contact, CancellationToken cancellationToken = default)
         {
             string filename = GenerateFilename(contact);
 
@@ -528,11 +504,13 @@ namespace Btsx.NextCloud
             return $"{id}.vcf";
         }
 
+        /// <inheritdoc/>
         public Task<List<IContactData>> ListCollectedContactsAsync(CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
+        /// <inheritdoc/>
         public async Task<bool> UpdateContactAsync(IContactData contact, CancellationToken cancellationToken = default)
         {
             if (contact == null)

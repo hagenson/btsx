@@ -16,6 +16,7 @@ namespace Btsx.Persistence
             this.log = log;
         }
 
+        /// <inheritdoc/>
         public async Task CleanupOldJobsAsync(CancellationToken cancellationToken)
         {
             try
@@ -38,6 +39,7 @@ namespace Btsx.Persistence
             }
         }
 
+        /// <inheritdoc/>
         public Task DeleteJobAsync(string jobId, CancellationToken cancellationToken)
         {
             try
@@ -56,12 +58,14 @@ namespace Btsx.Persistence
             return Task.CompletedTask;
         }
 
+        /// <inheritdoc/>
         public async Task<List<IJob>> GetIncompleteJobsAsync(CancellationToken cancellationToken)
         {
             var allJobs = await LoadAllJobsAsync(cancellationToken);
             return allJobs.Where(j => !j.IsCompleted).ToList();
         }
 
+        /// <inheritdoc/>
         public async Task<List<IJob>> LoadAllJobsAsync(CancellationToken cancellationToken)
         {
             var jobs = new List<IJob>();
@@ -92,6 +96,7 @@ namespace Btsx.Persistence
             return jobs;
         }
 
+        /// <inheritdoc/>
         public Task<IJob?> LoadJobAsync(string jobId, CancellationToken cancellationToken)
         {
             var filePath = GetJobFilePath(jobId);
@@ -100,6 +105,7 @@ namespace Btsx.Persistence
             return LoadJobInternalAsync(filePath);
         }
 
+        /// <inheritdoc/>
         public Task ClearProtectedPropertiesAsync(IJob job, CancellationToken cancellationToken)
         {
             // NULL the protected properties
@@ -107,6 +113,7 @@ namespace Btsx.Persistence
             return SaveJobInternalAsync(job, job, cancellationToken);
         }
 
+        /// <inheritdoc/>
         public Task SaveJobAsync(IJob job, CancellationToken cancellationToken)
         {
 

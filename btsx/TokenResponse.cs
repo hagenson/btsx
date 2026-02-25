@@ -30,6 +30,9 @@
         /// </summary>
         public string? TokenType { get; set; }
 
+        /// <summary>
+        /// Username or email address of the authenticated user.
+        /// </summary>
         public string? UserId { get; set; }
     }
 }

@@ -4,6 +4,7 @@ namespace BtsxWeb.Services
 {
     public class MoverFactory : IMoverFactory
     {
+        /// <inheritdoc/>
         public IMover CreateAuthenticator(MigrationType migrationType)
         {
             switch(migrationType)
@@ -17,6 +18,7 @@ namespace BtsxWeb.Services
             }
         }
 
+        /// <inheritdoc/>
         public IMover CreateMover(MigrationRequest request)
         {
             return CreateMoverInternal((dynamic)request);

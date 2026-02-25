@@ -11,10 +11,13 @@
         public bool DeleteSource { get; set; }
 
         /// <summary>
+        /// Specifies what to do when an email with the same Message ID already exists in the same folder at the destination.
+        /// </summary>
+        public DuplicateHandling DuplicateHandling { get; set; } = DuplicateHandling.Overwrite;
+
+        /// <summary>
         /// When true, no emails are copied, only the destination folders are created.
         /// </summary>
         public bool FoldersOnly { get; set; }
-
-        public DuplicateHandling DuplicateHandling { get; set; } = DuplicateHandling.Overwrite;
     }
 }

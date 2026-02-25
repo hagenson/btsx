@@ -40,12 +40,7 @@ namespace Btsx.Google
             });
         }
 
-        /// <summary>
-        /// Requests an OAuth token from the google API.
-        /// </summary>
-        /// <param name="code">Code provided byu the front-end authentication step.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Deserialised token request response.</returns>
+        /// <inheritdoc/>
         public async Task<TokenResponse> RequestTokenAsync(
             string code,
             CancellationToken cancellationToken)
@@ -91,11 +86,7 @@ namespace Btsx.Google
             }
         }
 
-        /// <summary>
-        /// Revokes a Google OAuth token.
-        /// </summary>
-        /// <param name="token">Token to revoke.</param>
-        /// <returns>True if the token was revoked.</returns>
+        /// <inheritdoc/>
         public async Task<bool> RevokeTokenAsync(string? token, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(token))
@@ -116,6 +107,7 @@ namespace Btsx.Google
             }
         }
 
+        /// <inheritdoc/>
         public string GetAuthUrl(MigrationType type, MigrationDirection direction, string state)
         {
             var scope = type switch

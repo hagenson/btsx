@@ -1,10 +1,11 @@
 ﻿namespace Btsx
 {
+    /// <summary>
+    /// Provides a common base for <see cref="IMover"/> implementations.
+    /// </summary>
     public abstract class MoverBase : IMover
     {
-        /// <summary>
-        /// Event triggered to report status updates.
-        /// </summary>
+        /// <inheritdoc/>
         public event StatusEvent? StatusUpdate
         {
             add
@@ -17,16 +18,40 @@
             }
         }
 
+        /// <inheritdoc/>
         public bool ProgressUpdates { get; set; }
+
+        /// <inheritdoc/>
         public MigrationStats? Statistics { get; protected set; }
+
+        /// <inheritdoc/>
         public abstract Task ExecuteAsync(CancellationToken cancellationToken);
+
+        /// <inheritdoc/>
         public abstract Task<bool> TestAuthenticationAsync(Creds creds, CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Count of completed items.
+        /// </summary>
         protected int completedItems;
 
+        /// <summary>
+        /// Percentage complete.
+        /// </summary>
         protected int progress;
 
+        /// <summary>
+        /// Count of total items to process.
+        /// </summary>
         protected int totalItems;
+
+        /// <summary>
+        /// Helper method to trigger a <see cref="StatusUpdate"/> event in a standard way.
+        /// </summary>
+        /// <param name="message">Display message.</param>
+        /// <param name="progress">If true, the event will only be triggered if the <see cref="progress"/>
+        /// value has changed since the last call to this method.</param>
+        /// <param name="type">Type of notification to send.</param>
         protected void DoStatus(string message, bool progress, StatusType type)
         {
             bool send = false;
