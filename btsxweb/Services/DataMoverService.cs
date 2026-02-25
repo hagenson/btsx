@@ -1,6 +1,6 @@
-using AutoMapper;
 using Btsx;
 using BtsxWeb.Models;
+using Mapster;
 using System.Collections.Concurrent;
 
 namespace BtsxWeb.Services
@@ -15,13 +15,11 @@ namespace BtsxWeb.Services
         /// </summary>
         public DataMoverService(
             IServiceScopeFactory scopeFactory,
-            IMapper mapper,
             ILogger<DataMoverService> logger,
             IPersistenceService persistenceService,
             IMoverFactory moverFactory)
         {
             this.scopeFactory = scopeFactory;
-            this.mapper = mapper;
             this.logger = logger;
             this.persistenceService = persistenceService;
             this.moverFactory = moverFactory;
@@ -156,8 +154,6 @@ namespace BtsxWeb.Services
 
         private readonly ILogger<DataMoverService> logger;
 
-        private readonly IMapper mapper;
-
         private readonly IMoverFactory moverFactory;
         private readonly IPersistenceService persistenceService;
         private readonly IServiceScopeFactory scopeFactory;
@@ -244,7 +240,7 @@ namespace BtsxWeb.Services
                         await oauthSvc.RevokeTokenAsync(credential.OAuthToken, stoppingCts!.Token);
                         job.Status = $"Successfully revoked OAuth token for {credential.Server}.";
                         job.StatusType = "Info";
-                        await notifier.NotifyStatusAsync(mapper.Map<MigrationJobModel>(job), stoppingCts!.Token);
+                        await notifier.NotifyStatusAsync(job.Adapt<MigrationJobModel>(), stoppingCts!.Token);
                     }
                     catch (Exception ex)
                     {
@@ -252,7 +248,7 @@ namespace BtsxWeb.Services
                             credential.Server, job.Id);
                         job.Status = $"Warning: Failed to revoke OAuth token for {credential.Server}.";
                         job.StatusType = "Warning";
-                        await notifier.NotifyStatusAsync(mapper.Map<MigrationJobModel>(job), stoppingCts!.Token);
+                        await notifier.NotifyStatusAsync(job.Adapt<MigrationJobModel>(), stoppingCts!.Token);
                     }
                 }
             }
@@ -274,7 +270,7 @@ namespace BtsxWeb.Services
                         running.Job.Status = e.Status ?? "";
                         running.Job.Progress = e.Percentage;
                         running.Job.StatusType = e.Type.ToString();
-                        await notifier.NotifyStatusAsync(mapper.Map<MigrationJobModel>(running.Job), stoppingCts.Token);
+                        await notifier.NotifyStatusAsync(running.Job.Adapt<MigrationJobModel>(), stoppingCts.Token);
                     };
 
                     await mover.ExecuteAsync(running.CancellationTokenSource.Token);
@@ -287,7 +283,7 @@ namespace BtsxWeb.Services
                         running.Job.StatusType = "Warning";
                         running.Job.EndTime = DateTime.UtcNow;
                         running.Job.IsCompleted = true;
-                        await notifier.NotifyStatusAsync(mapper.Map<MigrationJobModel>(running.Job), stoppingCts.Token);
+                        await notifier.NotifyStatusAsync(running.Job.Adapt<MigrationJobModel>(), stoppingCts.Token);
                     }
                     else
                     {
@@ -299,7 +295,7 @@ namespace BtsxWeb.Services
                         running.Job.EndTime = DateTime.UtcNow;
                         running.Job.IsCompleted = true;
                         await persistenceService.ClearProtectedPropertiesAsync(running.Job, stoppingCts!.Token);
-                        await notifier.NotifyStatusAsync(mapper.Map<MigrationJobModel>(running.Job), stoppingCts.Token);
+                        await notifier.NotifyStatusAsync(running.Job.Adapt<MigrationJobModel>(), stoppingCts.Token);
                     }
                 }
                 catch (OperationCanceledException)
@@ -316,7 +312,7 @@ namespace BtsxWeb.Services
                     running.Job.IsCompleted = true;
                     logger.LogError(ex, "Error during migration for job {JobId}", running.Job.Id);
                     await persistenceService.SaveJobAsync(running.Job, stoppingCts!.Token);
-                    await notifier.NotifyStatusAsync(mapper.Map<MigrationJobModel>(running.Job), stoppingCts.Token);
+                    await notifier.NotifyStatusAsync(running.Job.Adapt<MigrationJobModel>(), stoppingCts.Token);
                 }
             }
         }

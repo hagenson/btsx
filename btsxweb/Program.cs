@@ -1,10 +1,10 @@
-using AutoMapper;
 using Btsx;
 using Btsx.Google;
 using BtsxWeb;
 using BtsxWeb.Hubs;
 using BtsxWeb.Models;
 using BtsxWeb.Services;
+using Mapster;
 using Microsoft.Extensions.FileProviders;
 using System.Text.Json.Serialization;
 
@@ -37,18 +37,7 @@ builder.Services.AddSignalR()
 });
 
 builder.Services.AddScoped<IStatusNotifier, NotifierProxy>();
-builder.Services.AddSingleton<IMapper>(sp =>
-{
-    var cfg = new MapperConfiguration(cfg =>
-    {
-        cfg.AddProfile<AutoMapperConfig>();
-    },
-    sp.GetRequiredService<ILoggerFactory>());
-#if DEBUG
-    cfg.AssertConfigurationIsValid();
-#endif
-    return cfg.CreateMapper();
-});
+MapsterConfig.Configure();
 builder.Services.AddHttpClient();
 builder.Services.AddSession(options =>
 {
