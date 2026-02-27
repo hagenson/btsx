@@ -3,14 +3,16 @@ title: "Overview"
 weight: 0001
 ---
 
-# BTSX - Email Migration Tool
+# BTSX - Data Migration Platform
 
-BTSX is a email migration tool that helps you transfer email account between servers with ease.
+BTSX is a data migration platform that helps you transfer mail, contacts, and calendar data between IMAP, Google, and NextCloud servers with ease.
 BTSX provides both command-line and web-based interfaces to suit your needs.
 
 ## Key Features
 
 - **Complete Email Migration**: Migrate all emails, folders, and flags between servers
+- **Contacts Migration**: Transfer contacts between supported servers
+- **Calendar Migration**: Migrate calendar events and appointments
 - **Folder Hierarchy Preservation**: Maintains the complete folder structure from source to destination
 - **Two Interfaces**: Choose between CLI for automation or Web UI for ease of use
 - **Real-time Progress**: Monitor migration progress with live status updates
