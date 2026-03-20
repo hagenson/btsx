@@ -4,9 +4,10 @@ weight: 0120
 ---
 
 # Status Monitoring
-The status page provides real-time feedback on your email migration progress
-and completion status. A Migration Job is identified by a unique ID, which
-is visible in the address bar as the last part of the URL after the final "/" character.
+The status page provides real-time feedback on your migration job progress
+and completion status. This page works for both Mail and Contacts migrations.
+A Migration Job is identified by a unique ID, which is visible in the address 
+bar as the last part of the URL after the final "/" character.
 
 ![Running job](screenshots/status-start.png)
 
@@ -16,9 +17,9 @@ These are displayed as they arrive.
 
 ## Progress Bar
 If the **Progress Updates** option was selected on the [start page](../10-start#migration-options), a progress bar will be displayed.
-Progress will be calculated as the percentage of mail messages processed, so there may be a delay at the start of the migration job
-as the total number of mail messages are counted. This is because each folder in the source server must be opened to attain
-a count of messages.
+Progress will be calculated as the percentage of items processed (messages for mail migrations, contacts for contact migrations), 
+so there may be a delay at the start of the migration job as the total number of items are counted. 
+For mail migrations, this is because each folder in the source server must be opened to attain a count of messages.
 
 # Job Management
 As well as monitoring, the status page gives you the option to cancel running jobs and delete completed jobs.
@@ -49,7 +50,8 @@ OK, it's a hack, it just tells you press Ctrl+D. But there's no way to programma
 so this will have to suffice.
 
 # Job Completion
-When a Migration Job completes, the status page will update to show you completion status of the job.<br/>
+When a Migration Job completes, the status page will update to show you completion status of the job. 
+The statistics displayed will adapt based on the migration type (messages for mail migrations, contacts for contact migrations).<br/>
 ![Migration complete](screenshots/migration-complete.png)
 
 You can delete the job now, or leave it for automatic deletion after 7 days.

@@ -17,6 +17,15 @@ This guide walks you through configuring and starting a email migration job usin
 ## Configuring a Migration Job
 ![Start Page](screenshots/start.png)
 
+### Migration Type
+
+At the top of the page, select the **Migration Type** from the dropdown menu:
+
+- **Full Migration**: Migrates both folder structure and email messages (default).
+- **Folders Only**: Migrates only the folder structure without copying messages.
+
+![Migration Type Selection](screenshots/migration-type.png)
+
 ### Source &amp; Destination Account Configuration
 
 Fill in the source &amp; destination account details.
@@ -60,21 +69,20 @@ See the help documentation for you email provider to see how they support the IM
 There are several options that con be configured to customise how the migration will occur as described below.
 ![Migration options](screenshots/migration-options.png)
 
-- Delete Source
+- **Delete Source**
   - When selected, email messages will be deleted from the Source Account after they have been copied to the Destination Account.
   - If you are only taking a back up, leave this option un-checked.
-- Folders Only
-  - When selected, only the folder structure of the Source Account will be copied to the Destination Account.
-  - This can be used as a dry-run to confirm the migration will work the way you expect.
-- Progress updates
+- **Progress updates**
   - When selected, the system will provided a progress bar and percent complete updates as the migration occurs.
   - This option requires the system to count all email messages in the Source Account before copying any messages, which will increase the time taken to run the migration job.
-- Replace Existing
-  - When checked, the system will check to see if a message from the Source Account exists in the same folder in the Destination Account before copying the message.
-  - This will increase the time taken for the migration and is not  necessary when the Destination Account is new and empty.
+- **Duplicate Handling**
+  - Controls how the system handles messages that already exist in the destination folder.
   - The check is done by looking for a message with the same Message ID header in the destination folder.
-  - When unchecked, all messages from the Source Account will be copied to the Destination Account, which could result in duplicate messages if a migration has previously been performed.
-  - If a Migration Job is restarted, the Replace Existing option will be enabled to ensure duplicates are not created.
+  - Available options:
+    - **Overwrite**: Replaces existing messages in the destination with the version from the source. Use this when you want to ensure the destination has the latest version of each message.
+    - **Skip**: Skips copying messages that already exist in the destination. This is the fastest option and useful for resuming interrupted migrations or syncing new messages.
+    - **Create Duplicate**: Copies all messages regardless of whether they exist in the destination. This will create duplicate messages if a migration has previously been performed. Use this only when the destination is empty or you intentionally want duplicates.
+  - If a Migration Job is restarted, the Duplicate Handling will default to **Skip** to avoid unnecessary work and ensure duplicates are not created.
 
 ## Starting the Migration
 

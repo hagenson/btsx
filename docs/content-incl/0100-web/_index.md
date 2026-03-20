@@ -5,11 +5,13 @@ weight: 0100
 
 # Web Interface
 
-The BTSX Web Interface provides a user-friendly way to configure and run email migrations.
+The BTSX Web Interface provides a user-friendly way to configure and run data migrations.
 Built with ASP.NET Core and Vue.js, it offers real-time progress tracking and persistent job management.
 
 ## Features
 
+- **Unified Migration Interface**: Single interface with migration type selector for all migration types.
+- **Multiple Migration Types**: Support for Mail migrations and Contacts migrations.
 - **Intuitive Form-Based Configuration**: Simple forms for entering server credentials.
 - **OAuth Authentication**: Secure login with Google and other OAuth providers.
 - **Real-time Progress Updates**: Status updates are streamed back to the browser.
@@ -19,8 +21,15 @@ Built with ASP.NET Core and Vue.js, it offers real-time progress tracking and pe
 
 ## Running a Migration
 
-- **[Getting Started](start/)** - Configure and start your first migration.
+### Mail Migrations
+
+- **[Getting Started](start/)** - Configure and start your first mail migration.
 - **[Status Monitoring](status/)** - Understanding the status page and progress indicators.
+
+### Contacts Migrations
+
+- **[Contacts Migration Guide](contacts/)** - Configure and run contacts migrations.
+- **[Contacts Status Monitoring](contacts-status/)** - Monitor your contacts migration progress.
 
 ## Technical Details
 
