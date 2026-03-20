@@ -12,7 +12,6 @@ namespace BtsxWeb
         /// </summary>
         /// <param name="job">Migration job status information.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Awaitable Task.</returns>
         public Task NotifyStatusAsync(MigrationJobModel job, CancellationToken cancellationToken);
     }
 }

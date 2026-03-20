@@ -6,17 +6,24 @@ namespace Btsx
     public class Creds
     {
         /// <summary>
+        /// Specifies the type of service that these credentials allow access to.
+        /// </summary>
+        public string Implementer { get; set; } = "";
+
+        /// <summary>
         /// OAuth token obtains from an OAuth provider.
         /// </summary>
+        [Protected]
         public string? OAuthToken { get; set; }
 
         /// <summary>
         /// Account password.
         /// </summary>
+        [Protected]
         public string Password { get; set; } = "";
 
         /// <summary>
-        /// Email server host name.
+        /// Server host name or URI.
         /// </summary>
         public string Server { get; set; } = "";
 
@@ -29,7 +36,5 @@ namespace Btsx
         /// User name for the mail account.
         /// </summary>
         public string User { get; set; } = "";
-
-        public string? Implementor { get; set; }
     }
 }

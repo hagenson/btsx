@@ -61,44 +61,21 @@ namespace Btsx.NextCloud
             this.httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authHeader);
         }
 
-        /// <summary>
-        /// Checks if a contact already exists on the server using PROPFIND.
-        /// </summary>
-        /// <param name="contact">Contact to check for existence.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if the contact exists.</returns>
-        public async Task<bool> ContactExistsAsync(IContactData contact, CancellationToken cancellationToken = default)
-        {            
-            var filename = GenerateFilename(contact);
-            var url = $"{baseUrl}{filename}";
+        /// <inheritdoc/>
+        public async Task<List<IContactData>> MatchContactsAsync(
+            IContactData contact, CancellationToken cancellationToken = default)
+        {
+            if (!(contact.EmailAddresses?.Count > 0))
+                return new List<IContactData>();
+            if (contactCache == null)
+                contactCache = await ListContactsAsync(cancellationToken);
 
-            try
-            {
-                var request = new HttpRequestMessage(new HttpMethod("PROPFIND"), url);
-                request.Headers.Add("Depth", "0");
-                request.Content = new StringContent(
-                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                    "<d:propfind xmlns:d=\"DAV:\">" +
-                    "<d:prop><d:getetag /></d:prop>" +
-                    "</d:propfind>",
-                    Encoding.UTF8,
-                    "application/xml");
-
-                var response = await httpClient.SendAsync(request, cancellationToken);
-                return response.IsSuccessStatusCode;
-            }
-            catch
-            {
-                return false;
-            }
+            return contactCache.Where(c => c.EmailAddresses?.Any(
+                    e => contact.EmailAddresses.Any(ce => string.Equals(ce, e, StringComparison.OrdinalIgnoreCase))) == true)
+                .ToList();
         }
 
-        /// <summary>
-        /// Deletes a contact from the server.
-        /// </summary>
-        /// <param name="filename">Filename of the contact to delete.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if deletion was successful.</returns>
+        /// <inheritdoc/>
         public async Task<bool> DeleteContactAsync(IContactData contact, CancellationToken cancellationToken = default)
         {
             var filename = GenerateFilename(contact);
@@ -125,14 +102,10 @@ namespace Btsx.NextCloud
             httpClient?.Dispose();
         }
 
-        /// <summary>
-        /// Lists all contacts in the addressbook using PROPFIND.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>List of contact filenames.</returns>
+        /// <inheritdoc/>
         public async Task<List<IContactData>> ListContactsAsync(CancellationToken cancellationToken = default)
         {
-            var contacts = new List<string>();
+            var contactDataList = new List<IContactData>();
 
             try
             {
@@ -154,13 +127,26 @@ namespace Btsx.NextCloud
                     var xml = XDocument.Parse(content);
                     XNamespace d = "DAV:";
 
+                    var serverUrl = new Uri(baseUrl).GetLeftPart(UriPartial.Authority);
+
                     foreach (var responseElement in xml.Descendants(d + "response"))
                     {
                         var href = responseElement.Element(d + "href")?.Value;
                         if (!string.IsNullOrEmpty(href) && href.EndsWith(".vcf", StringComparison.OrdinalIgnoreCase))
                         {
-                            var filename = Path.GetFileName(href);
-                            contacts.Add(filename);
+                            var contactUrl = href.StartsWith("http", StringComparison.OrdinalIgnoreCase) 
+                                ? href 
+                                : $"{serverUrl}{href}";
+
+                            var getRequest = new HttpRequestMessage(HttpMethod.Get, contactUrl);
+                            var getResponse = await httpClient.SendAsync(getRequest, cancellationToken);
+
+                            if (getResponse.IsSuccessStatusCode)
+                            {
+                                var vcardContent = await getResponse.Content.ReadAsStringAsync(cancellationToken);
+                                var contactData = new VCardContactData(vcardContent);
+                                contactDataList.Add(contactData);
+                            }
                         }
                     }
                 }
@@ -170,14 +156,10 @@ namespace Btsx.NextCloud
                 // Return empty list on error
             }
 
-            throw new NotImplementedException();
+            return contactDataList;
         }
 
-        /// <summary>
-        /// Tests the connection to the NextCloud CardDAV server.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if the connection and authentication are successful.</returns>
+        /// <inheritdoc/>
         public async Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)
         {
             try
@@ -201,14 +183,8 @@ namespace Btsx.NextCloud
             }
         }
 
-        /// <summary>
-        /// Uploads a single contact to NextCloud in vCard 3.0 format.
-        /// </summary>
-        /// <param name="vcard">vCard 3.0 formatted string.</param>
-        /// <param name="filename">Filename for the contact (e.g., "contact-123.vcf").</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if upload was successful.</returns>
-        public async Task<bool> UploadContactAsync(IContactData contact, CancellationToken cancellationToken = default)
+        /// <inheritdoc/>
+        public async Task<bool> CreateContactAsync(IContactData contact, CancellationToken cancellationToken = default)
         {
             string filename = GenerateFilename(contact);
 
@@ -528,10 +504,37 @@ namespace Btsx.NextCloud
             return $"{id}.vcf";
         }
 
+        /// <inheritdoc/>
         public Task<List<IContactData>> ListCollectedContactsAsync(CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
+
+        /// <inheritdoc/>
+        public async Task<bool> UpdateContactAsync(IContactData contact, CancellationToken cancellationToken = default)
+        {
+            if (contact == null)
+                throw new ArgumentNullException(nameof(contact));
+
+            string filename = GenerateFilename(contact);
+            var url = $"{baseUrl}{filename}";
+
+            try
+            {
+                string vcard = ConvertToVCard(contact);
+                var request = new HttpRequestMessage(HttpMethod.Put, url);
+                request.Content = new StringContent(vcard, Encoding.UTF8, "text/vcard");
+
+                var response = await httpClient.SendAsync(request, cancellationToken);
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private List<IContactData>? contactCache = null;
     }
 
     /// <summary>

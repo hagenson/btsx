@@ -1,31 +1,32 @@
 namespace Btsx
 {
     /// <summary>
-    /// Encapsulates statics for a mail migration job.
+    /// Encapsulates statics for a data migration job.
     /// </summary>
     public class MigrationStats
     {
         /// <summary>
-        /// Number of messages that could not be copied.
+        /// Number of items that could not be copied.
         /// </summary>
-        public int FailedMessages { get; set; }
+        public int FailedItems { get; set; }
 
         /// <summary>
-        /// Number of messages that were skipped.
+        /// Number of items that were skipped.
         /// </summary>
         /// <remarks>
-        /// Messages may be skipped because a copy already exists in the destination account.
+        /// Items may be skipped because a copy already exists in the destination account, depending on
+        /// and duplicate handling options for a migration job.
         /// </remarks>
-        public int SkippedMessages { get; set; }
+        public int SkippedItems { get; set; }
 
         /// <summary>
-        /// Number of messages successfully copied.
+        /// Number of items successfully copied.
         /// </summary>
-        public int SuccessfulMessages { get; set; }
+        public int SuccessfulItems { get; set; }
 
         /// <summary>
-        /// Total number of messages processed.
+        /// Total number of items processed.
         /// </summary>
-        public int TotalMessages { get; set; }
+        public int TotalItems { get; set; }
     }
 }

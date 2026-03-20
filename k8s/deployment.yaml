@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: btsx
+  namespace: btsx
+  labels:
+    app: btsx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: btsx
+  template:
+    metadata:
+      labels:
+        app: btsx
+    spec:
+      containers:
+      - name: btsx
+        image: btsx:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        env:
+        - name: ASPNETCORE_URLS
+          value: "http://+:8080"
+        - name: ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: btsx-secrets
+              key: ENCRYPTION_KEY
+        - name: GoogleOAuth__ClientId
+          valueFrom:
+            secretKeyRef:
+              name: btsx-secrets
+              key: GoogleOAuth__ClientId
+        - name: GoogleOAuth__ClientSecret
+          valueFrom:
+            secretKeyRef:
+              name: btsx-secrets
+              key: GoogleOAuth__ClientSecret
+        - name: GoogleOAuth__RedirectUri
+          value: "https://btsx.nz/OAuthCallback/{0}"
+        - name: AppConfig__SupportEmail
+          value: "btsx@hagenson.com"
+        - name: Persistence__StorageDirectory
+          value: "/app/data"
+        volumeMounts:
+        - name: btsx-data
+          mountPath: /app/data
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: "1"
+            memory: 1Gi
+      volumes:
+      - name: btsx-data
+        persistentVolumeClaim:
+          claimName: btsx-pvc

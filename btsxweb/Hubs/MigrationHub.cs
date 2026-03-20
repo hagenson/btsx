@@ -1,28 +1,28 @@
+using Btsx;
 using BtsxWeb.Models;
 using BtsxWeb.Services;
+using Mapster;
 using Microsoft.AspNetCore.SignalR;
 
 namespace BtsxWeb.Hubs
 {
     /// <summary>
-    /// Provides the SignalR hub for the application.
+    /// Provides a SignalR hub for managing migration jobs.
     /// </summary>
     public class MigrationHub : Hub
     {
         /// <summary>
         /// Initialises the hub.
         /// </summary>
-        public MigrationHub(MailMoverService mailMoverService, Mapper mapper)
+        public MigrationHub(DataMoverService mailMoverService)
         {
             this.mailMoverService = mailMoverService;
-            this.mapper = mapper;
         }
 
         /// <summary>
         /// Cancels a running migration job.
         /// </summary>
         /// <param name="jobId">ID of the job to cancel.</param>
-        /// <returns>Awaitable Task.</returns>
         public async Task CancelMigration(string jobId)
         {
             var cancelled = await mailMoverService.CancelMigrationAsync(jobId);
@@ -36,7 +36,6 @@ namespace BtsxWeb.Hubs
         /// Deletes a migration job.
         /// </summary>
         /// <param name="jobId">ID of the job to delete.</param>
-        /// <returns>Awaitable Task.</returns>
         public async Task DeleteJob(string jobId)
         {
             await mailMoverService.DeleteJob(jobId);
@@ -55,14 +54,13 @@ namespace BtsxWeb.Hubs
                 return null;
             }
 
-            return mapper.Map(job);
+            return job.Adapt<MigrationJobModel>();
         }
 
         /// <summary>
         /// Adds the current connection to the specified job group.
         /// </summary>
         /// <param name="jobId">The identifier of the job group to join. </param>
-        /// <returns>Awaitable Task.</returns>
         public async Task JoinJobGroup(string jobId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, jobId, Context.ConnectionAborted);
@@ -72,7 +70,6 @@ namespace BtsxWeb.Hubs
         /// Starts a migration job.
         /// </summary>
         /// <param name="request">Parameters for the job.</param>
-        /// <returns>Awaitable Task.</returns>
         public async Task StartMigration(MigrationRequest request)
         {
             var jobId = mailMoverService.StartMigration(request);
@@ -80,7 +77,6 @@ namespace BtsxWeb.Hubs
             await Clients.Caller.SendAsync("MigrationStarted", jobId);
         }
 
-        private readonly MailMoverService mailMoverService;
-        private readonly Mapper mapper;
+        private readonly DataMoverService mailMoverService;
     }
 }

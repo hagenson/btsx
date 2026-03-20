@@ -46,24 +46,28 @@ namespace BtsxCli
 
         static async Task MigrateMailAsync()
         {
-            var mover = new MailMover();
-            mover.DeleteSource = false;
-            mover.FoldersOnly = false;
-            mover.ReplaceExisting = false;
-            mover.SourceCredentials = src;
-            mover.DestCredentials = dst;
-            mover.ProgressUpdates = true;
+            var mover = new MailMover
+            {
+                SourceCredentials = src,
+                DestinationCredentials = dst,
+                Options = new MailMoverOptions
+                {
+                    DeleteSource = false,
+                    FoldersOnly = false,
+                    DuplicateHandling = DuplicateHandling.Skip,
+                },
+                ProgressUpdates = true,
+            };
             mover.StatusUpdate += Mover_ProgressUpdate;
-
             await mover.ExecuteAsync(CancellationToken.None);
             if (mover.Statistics != null)
             {
                 Console.WriteLine("\n" + new string('=', 60));
                 Console.WriteLine("Migration Summary:");
-                Console.WriteLine($"  Total messages processed: {mover.Statistics.TotalMessages}");
-                Console.WriteLine($"  Successfully migrated: {mover.Statistics.SuccessfulMessages}");
-                Console.WriteLine($"  Duplicates skipped: {mover.Statistics.SkippedMessages}");
-                Console.WriteLine($"  Failed: {mover.Statistics.FailedMessages}");
+                Console.WriteLine($"  Total messages processed: {mover.Statistics.TotalItems}");
+                Console.WriteLine($"  Successfully migrated: {mover.Statistics.SuccessfulItems}");
+                Console.WriteLine($"  Duplicates skipped: {mover.Statistics.SkippedItems}");
+                Console.WriteLine($"  Failed: {mover.Statistics.FailedItems}");
                 Console.WriteLine(new string('=', 60));
             }
 

@@ -2,40 +2,34 @@ using Btsx;
 using BtsxWeb.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Options;
 
 namespace BtsxWeb.Pages;
 
 [IgnoreAntiforgeryToken]
 public class IndexModel : PageModel
 {
-    public IndexModel(ILogger<IndexModel> logger, IOptions<GoogleOAuthSettings> googleOAuthSettings)
+    public IndexModel(
+        IServiceProvider serviceProvider,
+        IMoverFactory moverFactory,
+        ILogger<IndexModel> logger)
     {
+        this.serviceProvider = serviceProvider;
+        this.moverFactory = moverFactory;
         this.logger = logger;
-        this.googleOAuthSettings = googleOAuthSettings.Value;
     }
 
     public void OnGet()
     {
     }
 
-    public IActionResult OnGetGoogleAuth(string type)
+    public IActionResult OnGetOAuthUrl(string implementer, MigrationDirection direction, MigrationType migrationType)
     {
-        var clientId = googleOAuthSettings.ClientId;
-        var redirectUri = googleOAuthSettings.RedirectUri;
-
-        if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(redirectUri))
-        {
-            return BadRequest("Google OAuth is not configured. Please set ClientId and RedirectUri in appsettings.json");
-        }
-
-        var state = $"{type}_{Guid.NewGuid():N}";
+        var state = $"{direction}_{Guid.NewGuid():N}";
         TempData["OAuthState"] = state;
-        TempData["OAuthType"] = type;
+        TempData["OAuthType"] = direction;
 
-        var scope = Uri.EscapeDataString("https://mail.google.com/ https://www.googleapis.com/auth/userinfo.email");
-        var authUrl = $"https://accounts.google.com/o/oauth2/v2/auth?client_id={Uri.EscapeDataString(clientId)}&redirect_uri={Uri.EscapeDataString(redirectUri)}&response_type=code&scope={scope}&access_type=offline&prompt=consent&state={state}";
-
+        var authUrl = serviceProvider.GetRequiredKeyedService<IOAuthService>(implementer)
+            .GetAuthUrl(migrationType, direction, state);
         return new JsonResult(new { authUrl });
     }
 
@@ -51,12 +45,14 @@ public class IndexModel : PageModel
             Server = request.Server,
             User = request.User,
             Password = request.Password,
-            UseOAuth = false
+            UseOAuth = false,
+            Implementer = request.Implementer ?? ""
         };
 
         try
         {
-            var success = await MailMover.TestAuthenticationAsync(creds, HttpContext.RequestAborted);
+            var mover = moverFactory.CreateAuthenticator(request.MigrationType);
+            var success = await mover.TestAuthenticationAsync(creds, HttpContext.RequestAborted);
             if (success)
             {
                 return new JsonResult(new { success = true, message = "Authentication successful" });
@@ -73,14 +69,7 @@ public class IndexModel : PageModel
         }
     }
 
-    private readonly GoogleOAuthSettings googleOAuthSettings;
     private readonly ILogger<IndexModel> logger;
-}
-
-public class TestAuthRequest
-{
-    public string Password { get; set; } = "";
-    public string Server { get; set; } = "";
-    public string User { get; set; } = "";
-    public string? Implementor { get; set; }
+    private readonly IMoverFactory moverFactory;
+    private readonly IServiceProvider serviceProvider;
 }

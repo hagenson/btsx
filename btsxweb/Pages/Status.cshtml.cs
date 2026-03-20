@@ -10,6 +10,7 @@ public class StatusModel : PageModel
     }
 
     public string Id { get; set; } = "";
+
     public void OnGet(string id)
     {
         Id = id;

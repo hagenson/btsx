@@ -7,86 +7,31 @@ namespace Btsx
     /// <summary>
     /// Contains the logic to move of copy emails from one account to another.
     /// </summary>
-    public class MailMover
+    public class MailMover: MoverBase, IMover<Creds, MailMoverOptions>
     {
-        /// <summary>
-        /// Event triggered to report status updates.
-        /// </summary>
-        public event StatusEvent StatusUpdate
-        {
-            add
-            {
-                statusUpdate += value;
-            }
-            remove
-            {
-                statusUpdate -= value;
-            }
-        }
 
-        /// <summary>
-        /// If true, emails will be deleted from the source account after being copied to the destination account.
-        /// </summary>
-        public bool DeleteSource
-        {
-            get
-            {
-                return deleteSource;
-            }
 
+        /// <inheritdoc/>
+        public Creds? DestinationCredentials { get; set; }
+
+        /// <inheritdoc/>
+        public MailMoverOptions? Options {
+            get => options;
             set
             {
-                deleteSource = value;
+                options = value;
                 SetSourceAccess();
             }
         }
 
-        /// <summary>
-        /// Specifies the destination email account.
-        /// </summary>
-        public Creds? DestCredentials { get; set; }
 
-        /// <summary>
-        /// When true, no emails are copied, only the destination folders are created.
-        /// </summary>
-        public bool FoldersOnly { get; set; }
 
-        /// <summary>
-        /// When true, completion percentage will be calculated and progress updates notified via the <see cref="StatusUpdate"/> event.
-        /// </summary>
-        /// <remarks>
-        /// When this is true, the total number of emails in the source account will be counted before any emails are copied,
-        /// which may take some time if there are many folders int he source account.
-        /// </remarks>
-        public bool ProgressUpdates { get; set; }
-
-        /// <summary>
-        /// When true, for each email message copied, an attempt will be made to see if it already exists on the destination server
-        /// by trying to match the Message ID header.
-        /// </summary>
-        /// <remarks>
-        /// If false, no checks will be made to see if the email message exists. This may lead to the duplication of
-        /// emails in the destination account if multiple mgration attempts are made.
-        /// </remarks>
-        public bool ReplaceExisting { get; set; }
-
-        /// <summary>
-        /// The credentials for the source account.
-        /// </summary>
+        /// <inheritdoc/>
         public Creds? SourceCredentials { get; set; }
 
-        /// <summary>
-        /// Contains statistics for the executed migration job.
-        /// </summary>
-        public MigrationStats? Statistics { get; private set; }
 
-        /// <summary>
-        /// Tests that the provided credentials will successfully authenticate.
-        /// </summary>
-        /// <param name="creds">Mail account credentials to test.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>True if the account was authenticated successfully.</returns>
-        public static async Task<bool> TestAuthenticationAsync(Creds creds, CancellationToken cancellationToken = default)
+        /// <inheritdoc/>
+        public async override Task<bool> TestAuthenticationAsync(Creds creds, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -103,20 +48,16 @@ namespace Btsx
             }
         }
 
-        /// <summary>
-        /// Runs the configures migration job.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Awaitable task.</returns>
-        public async Task ExecuteAsync(CancellationToken cancellationToken)
+        /// <inheritdoc/>
+        public async override Task ExecuteAsync(CancellationToken cancellationToken)
         {
             if (SourceCredentials == null)
                 throw new InvalidOperationException($"{nameof(SourceCredentials)} must be specified.");
-            if (DestCredentials == null)
-                throw new InvalidOperationException($"{nameof(DestCredentials)} must be specified.");
+            if (DestinationCredentials == null)
+                throw new InvalidOperationException($"{nameof(DestinationCredentials)} must be specified.");
 
-            totalMessages = 0;
-            completedMessages = 0;
+            totalItems = 0;
+            completedItems = 0;
             progress = 0;
             progress = 0;
             using (var srcHost = new ImapClient())
@@ -141,11 +82,11 @@ namespace Btsx
                         await CountMesagesAsync(allFolders, cancellationToken);
                         if (cancellationToken.IsCancellationRequested)
                             return;
-                        DoStatus($"Found {totalMessages} messages on source server.", false, StatusType.Info);
+                        DoStatus($"Found {totalItems} messages on source server.", false, StatusType.Info);
                     }
 
-                    DoStatus($"Connecting to destination: {DestCredentials.Server}...", false, StatusType.Info);
-                    await ConnectHost(dstHost, DestCredentials, cancellationToken);
+                    DoStatus($"Connecting to destination: {DestinationCredentials.Server}...", false, StatusType.Info);
+                    await ConnectHost(dstHost, DestinationCredentials, cancellationToken);
                     if (cancellationToken.IsCancellationRequested)
                         return;
                     DoStatus("Connected to destination server", false, StatusType.Info);
@@ -186,26 +127,9 @@ namespace Btsx
             }
         }
 
-        /// <summary>
-        /// Called to notify status updates.
-        /// </summary>
-        /// <param name="args">Migration job status.</param>
-        protected virtual void OnProgressUpdate(StatusEventArgs args)
-        {
-            statusUpdate?.Invoke(this, args);
-        }
-
-        private int completedMessages;
-
-        private bool deleteSource;
-
-        private int progress;
-
         private FolderAccess srcAccess = FolderAccess.ReadOnly;
+        private MailMoverOptions? options;
 
-        private int totalMessages;
-
-        private event StatusEvent? statusUpdate;
         private static async Task ConnectHost(ImapClient srcHost, Creds creds, CancellationToken cancellationToken)
         {
             await srcHost.ConnectAsync(creds.Server, 993, true, cancellationToken);
@@ -242,7 +166,7 @@ namespace Btsx
 
         private async Task CountMesagesAsync(IList<IMailFolder> folders, CancellationToken cancellationToken)
         {
-            totalMessages = 0;
+            totalItems = 0;
             foreach (var folder in folders)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -253,46 +177,15 @@ namespace Btsx
                     if (!ShouldSkipFolder(folder))
                     {
                         await folder.OpenAsync(FolderAccess.ReadOnly, cancellationToken);
-                        totalMessages += folder.Count;
+                        totalItems += folder.Count;
                         await folder.CloseAsync(false, cancellationToken);
-                        DoStatus($"{totalMessages} messages found - {folder.Count} discovered in {folder.FullName}", false, StatusType.Info);
+                        DoStatus($"{totalItems} messages found - {folder.Count} discovered in {folder.FullName}", false, StatusType.Info);
                     }
                 }
                 catch (Exception e)
                 {
                     DoStatus($"Error counting messages in source folder {folder.FullName}: {e.Message}.", false, StatusType.Error);
                 }
-            }
-        }
-
-        private void DoStatus(string message, bool progress, StatusType type)
-        {
-            bool send = false;
-            var prog = totalMessages > 0 
-                ? (int)((decimal)completedMessages / (decimal)totalMessages * 100m)
-                : 0;
-            if (progress)
-            {
-                if (totalMessages > 0)
-                {
-                    if (prog != this.progress)
-                    {
-                        send = true;
-                        this.progress = prog;
-                    }
-                }
-
-                send = send || completedMessages % 10 == 0;
-            }
-            else
-            {
-                this.progress = prog;
-                send = true;
-            }
-
-            if (send)
-            {
-                OnProgressUpdate(new StatusEventArgs { Percentage = this.progress, Status = message, Type = type });
             }
         }
 
@@ -398,9 +291,9 @@ namespace Btsx
                 return;
             }
 
-            if (FoldersOnly)
+            if (Options?.FoldersOnly == true)
             {
-                completedMessages += srcFolder.Count;
+                completedItems += srcFolder.Count;
                 DoStatus($"Processed {dstFolder.FullName}", false, StatusType.Info);
                 await srcFolder.CloseAsync(false, cancellationToken);
                 return;
@@ -418,7 +311,7 @@ namespace Btsx
             while (uids.Count > 0)
             {
                 var uid = uids.First();
-                stats.TotalMessages++;
+                stats.TotalItems++;
                 try
                 {
                     var message = await srcFolder.GetMessageAsync(uid, cancellationToken);
@@ -428,19 +321,22 @@ namespace Btsx
                     if (hdr != null)
                     {
                         curHdr = hdr.Value;
-                        if (checkDuplicate || ReplaceExisting)
+                        if (Options?.DuplicateHandling == DuplicateHandling.CreateDuplicate)
+                        {
+                        }
+                        else if (checkDuplicate || Options?.DuplicateHandling == DuplicateHandling.Overwrite)
                         {
                             var match = await dstFolder.SearchAsync(SearchQuery.HeaderContains(
                                 hdr.Field, hdr.Value),
                                 cancellationToken);
-                            if (ReplaceExisting)
+                            if (Options?.DuplicateHandling == DuplicateHandling.Overwrite)
                             {
                                 foreach (var delId in match)
                                 {
-                                    await dstFolder.AddFlagsAsync(uid, MessageFlags.Deleted, true, cancellationToken);
+                                    await dstFolder.AddFlagsAsync(delId, MessageFlags.Deleted, true, cancellationToken);
                                 }
                             }
-                            else
+                            else if (Options?.DuplicateHandling == DuplicateHandling.Skip)
                             {
                                 skip = match.Count > 0;
                             }
@@ -457,18 +353,18 @@ namespace Btsx
                         var flags = items.FirstOrDefault()?.Flags ?? MessageFlags.None;
 
                         await dstFolder.AppendAsync(message, flags, message.Date, cancellationToken);
-                        if (DeleteSource)
+                        if (Options?.DeleteSource == true)
                             await srcFolder.AddFlagsAsync(uid, MessageFlags.Deleted, true, cancellationToken);
 
-                        stats.SuccessfulMessages++;
+                        stats.SuccessfulItems++;
                     }
                     else
                     {
-                        stats.SkippedMessages++;
+                        stats.SkippedItems++;
                     }
                     uids.RemoveAt(0);
-                    completedMessages++;
-                    DoStatus($"Migrated {completedMessages} messages", true, StatusType.Info);
+                    completedItems++;
+                    DoStatus($"Migrated {completedItems} messages", true, StatusType.Info);
                 }
                 catch (Exception ex)
                 {
@@ -487,12 +383,12 @@ namespace Btsx
                             if (!dstHost.IsConnected)
                             {
                                 DoStatus($"Destination is disconnected, reconnecting...", false, StatusType.Warning);
-                                await ConnectHost(dstHost, DestCredentials, cancellationToken);
+                                await ConnectHost(dstHost, DestinationCredentials, cancellationToken);
                                 dstFolder = await dstHost.GetFolderAsync(dstFolder.FullName, cancellationToken);
                                 await dstFolder.OpenAsync(FolderAccess.ReadWrite, cancellationToken);
                                 DoStatus($"Reconnected.", false, StatusType.Warning);
                             }
-                            stats.TotalMessages--;
+                            stats.TotalItems--;
                         }
                         catch (Exception e)
                         {
@@ -502,7 +398,7 @@ namespace Btsx
                     }
                     else
                     {
-                        stats.FailedMessages++;
+                        stats.FailedItems++;
                         DoStatus($"Failed to migrate message with header {curHdr}: {ex.Message}", false, StatusType.Warning);
                     }
                 }
@@ -510,12 +406,12 @@ namespace Btsx
 
             try
             {
-                if (DeleteSource)
+                if (Options?.DeleteSource == true)
                 {
                     await srcFolder.ExpungeAsync(cancellationToken);
                     DoStatus($"Expunged deleted messages from source", false, StatusType.Info);
                 }
-                if (ReplaceExisting)
+                if (Options?.DuplicateHandling == DuplicateHandling.Overwrite)
                 {
                     await dstFolder.ExpungeAsync(cancellationToken);
                 }
@@ -533,10 +429,10 @@ namespace Btsx
 
         private void SetSourceAccess()
         {
-            if (deleteSource)
+            if (Options?.DeleteSource == true)
                 srcAccess = FolderAccess.ReadWrite;
             else
-                srcAccess = FolderAccess.ReadWrite;
+                srcAccess = FolderAccess.ReadOnly;
         }
 
         private bool ShouldSkipFolder(IMailFolder folder)

@@ -1,18 +1,17 @@
+export interface Creds {
+    server: string;
+    user: string;
+    password: string;
+    oAuthToken: string | null;
+    useOAuth: boolean;
+    implementer: string;
+}
 export interface MigrationRequest {
-    sourceServer: string;
-    sourceUser: string;
-    sourcePassword: string;
-    sourceOAuthToken: string | null;
-    sourceUseOAuth: boolean;
-    destServer: string;
-    destUser: string;
-    destPassword: string;
-    destOAuthToken: string | null;
-    destUseOAuth: boolean;
-    deleteSource: boolean;
-    foldersOnly: boolean;
+    $type: string;
+    sourceCredentials: Creds;
+    destinationCredentials: Creds;
+    options: any;
     progressUpdates: boolean;
-    replaceExisting: boolean;
 }
 
 export interface OAuthResponse {
@@ -27,19 +26,17 @@ export interface OAuthMessageData {
     error?: string;
 }
 
-export interface ContactTransferRequest {
-    destOAuthToken?: string;
-    destPassword?: string;
-    destServer: string;
-    destServiceType: string;
-    destUseOAuth: boolean
-    destUser: string;
-    progressUpdates: boolean;
-    replaceExisting: boolean;
-    sourceOAuthToken?: string;
-    sourcePassword?: string;
-    sourceServer: string;
-    sourceServiceType: string;
-    sourceUseOAuth: boolean;
-    sourceUser: string;
+export interface ContactMoverOptions {
+    duplicateHandling: string;
+    deleteSource: boolean;
+    importFolderName: string;
+    importCollectedContacts: boolean;
+}
+
+export interface TestAuthRequest {
+    password: string;
+    server: string;
+    user: string;
+    implementer: string;
+    migrationType: 'Mail' | 'Contacts';
 }

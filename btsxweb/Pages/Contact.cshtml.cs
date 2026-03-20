@@ -13,6 +13,7 @@ public class ContactModel : PageModel
     }
 
     public string SupportEmail => appConfig.SupportEmail;
+
     public void OnGet()
     {
     }
