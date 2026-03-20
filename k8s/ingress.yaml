@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: btsx-ingress
+  namespace: btsx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    openappsec.io/policy: open-appsec-best-practice-policy
+spec:
+  ingressClassName: appsec-nginx
+  tls:
+  - hosts:
+    - btsx.nz
+    secretName: btsx-tls
+  rules:
+  - host: btsx.nz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: btsx-service
+            port:
+              number: 80

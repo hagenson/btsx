@@ -1,0 +1,54 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# .NET build outputs
+bin/
+obj/
+TestResults/
+
+# IDE and editor files
+.git/
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Hugo documentation build
+docs/public/
+docs/resources/
+
+# Build artifacts
+*.dll
+*.exe
+*.pdb
+*.user
+*.suo
+
+# Logs
+*.log
+
+# Environment and secrets
+.env
+.env.local
+*.pfx
+*.key
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose*.yml
