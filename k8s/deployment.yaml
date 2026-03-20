@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: btsx
-        image: btsx:latest
+        image: hagenson/btsxweb:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -25,11 +25,6 @@ spec:
         env:
         - name: ASPNETCORE_URLS
           value: "http://+:8080"
-        - name: ENCRYPTION_KEY
-          valueFrom:
-            secretKeyRef:
-              name: btsx-secrets
-              key: ENCRYPTION_KEY
         - name: GoogleOAuth__ClientId
           valueFrom:
             secretKeyRef:
@@ -41,11 +36,22 @@ spec:
               name: btsx-secrets
               key: GoogleOAuth__ClientSecret
         - name: GoogleOAuth__RedirectUri
-          value: "https://btsx.nz/OAuthCallback/{0}"
+          valueFrom:
+            secretKeyRef:
+              name: btsx-secrets
+              key: GoogleOAuth__RedirectUri
         - name: AppConfig__SupportEmail
-          value: "btsx@hagenson.com"
+          valueFrom:
+            secretKeyRef:
+              name: btsx-secrets
+              key: AppConfig__SupportEmail
         - name: Persistence__StorageDirectory
           value: "/app/data"
+        - name: Persistence__EncryptionKey
+          valueFrom:
+            secretKeyRef:
+              name: btsx-secrets
+              key: Persistence__EncryptionKey
         volumeMounts:
         - name: btsx-data
           mountPath: /app/data

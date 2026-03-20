@@ -18,7 +18,7 @@ if [ ! -f "$ENV_FILE" ]; then
     echo "     cp $SCRIPT_DIR/.env.template $SCRIPT_DIR/.env"
     echo ""
     echo "  2. Edit .env and set all required environment variables:"
-    echo "     - ENCRYPTION_KEY"
+    echo "     - Persistence__EncryptionKey"
     echo "     - GoogleOAuth__ClientId"
     echo "     - GoogleOAuth__ClientSecret"
     echo "     - GoogleOAuth__RedirectUri"
@@ -33,7 +33,7 @@ echo "✓ Found .env file at $ENV_FILE"
 echo ""
 
 REQUIRED_VARS=(
-    "ENCRYPTION_KEY"
+    "Persistence__EncryptionKey"
     "GoogleOAuth__ClientId"
     "GoogleOAuth__ClientSecret"
     "GoogleOAuth__RedirectUri"
@@ -69,6 +69,11 @@ echo ""
 
 echo "Deleting existing secret if present..."
 kubectl delete secret "$SECRET_NAME" --namespace="$NAMESPACE" --ignore-not-found=true
+
+# Ensure the namespace exists
+echo ""
+echo "Creating the namespace..."
+kubectl create ns $NAMESPACE
 
 echo ""
 echo "Creating Kubernetes secret..."
