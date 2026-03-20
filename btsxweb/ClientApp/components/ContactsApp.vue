@@ -11,7 +11,7 @@
                         headerClass="bg-primary"
                         :serverTypeOptions="[{value: 'NextCloud', label: 'NextCloud'}, {value: 'Google', label: 'Google'}]"
                         migrationType="Contacts"
-                        :useOAuthPredicate="(serverType) => serverType !== 'NextCloud'"
+                        :useOAuthPredicate="(serverType: string) => serverType !== 'NextCloud'"
                         :onAuthError="handleAuthError"
                     />
                 </div>
@@ -23,7 +23,7 @@
                         headerClass="bg-success"
                         :serverTypeOptions="[{value: 'NextCloud', label: 'NextCloud'}, {value: 'Google', label: 'Google'}]"
                         migrationType="Contacts"
-                        :useOAuthPredicate="(serverType) => serverType !== 'NextCloud'"
+                        :useOAuthPredicate="(serverType: string) => serverType !== 'NextCloud'"
                         :onAuthError="handleAuthError"
                     />
                 </div>
