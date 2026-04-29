@@ -1,6 +1,6 @@
 <template>
     <div class="container mt-4">
-        <h1 class="mb-4">Mail Migration Tool</h1>
+        <h3 class="mb-4">Mail Migration Tool</h3>
 
         <div id="migrationForm">
             <div class="row">

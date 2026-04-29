@@ -1,7 +1,8 @@
 <template>
+    <h1>BTSX Data Mover</h1>
     <div class="container mt-4">
         <div class="mb-4">
-            <label for="migrationType" class="form-label">Migration Type</label>
+            <label for="migrationType" class="form-label">Choose the migration type</label>
             <select class="form-select" id="migrationType" v-model="migrationType">
                 <option value="Mail">Mail</option>
                 <option value="Contacts">Contacts</option>

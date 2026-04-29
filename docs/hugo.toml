@@ -1,14 +1,18 @@
 baseURL = '/help/'
-languageCode = 'en-NZ'
+defaultContentLanguage = 'en'
 title = 'BTSX Help Documentation'
 theme = 'hugo-book'
+
+[languages]
+  [languages.en]
+    locale = 'en-NZ'
 
 [params]
   BookRepo = 'https://github.com/hagenson/btsx'
   BookSearch = true
   BookComments = false
   BookToC = true
-  BookSection = '/docs'
+  BookSection = 'docs'
 
 [markup]
   [markup.goldmark]

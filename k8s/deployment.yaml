@@ -18,7 +18,7 @@ spec:
       containers:
       - name: btsx
         image: hagenson/btsxweb:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
           protocol: TCP

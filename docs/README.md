@@ -6,7 +6,7 @@ This directory contains the Hugo-based documentation site for BTSX.
 
 ### Prerequisites
 
-- [Hugo Extended](https://gohugo.io/installation/) version 0.112.0 or later
+- [Hugo Extended](https://gohugo.io/installation/) version 0.146.0 or later
 
 ### Install Hugo Book Theme
 

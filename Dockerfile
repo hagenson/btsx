@@ -28,12 +28,9 @@ COPY docs/ ./docs/
 
 # Build Hugo documentation
 WORKDIR /src/docs
-RUN hugo --cleanDestinationDir
-
-# Copy Hugo output to wwwroot/help
-WORKDIR /src
-RUN mkdir -p btsxweb/wwwroot/help && \
-    cp -r docs/public/* btsxweb/wwwroot/help/
+RUN bash setup-theme.sh
+RUN npm install
+RUN npm run build
 
 # Install npm dependencies
 WORKDIR /src/btsxweb
@@ -52,6 +49,11 @@ RUN dotnet publish btsxweb/btsxweb.csproj -c Release -o /app/publish --no-build
 
 # Stage 2: Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+
+
+# Copy Hugo output to /docs
+WORKDIR /docs/public
+COPY --from=build /src/docs/public .
 
 WORKDIR /app
 
