@@ -73,7 +73,7 @@ kubectl delete secret "$SECRET_NAME" --namespace="$NAMESPACE" --ignore-not-found
 # Ensure the namespace exists
 echo ""
 echo "Creating the namespace..."
-kubectl create ns $NAMESPACE
+kubectl create ns $NAMESPACE || true
 
 echo ""
 echo "Creating Kubernetes secret..."

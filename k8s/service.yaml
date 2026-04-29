@@ -4,7 +4,7 @@ metadata:
   name: btsx-service
   namespace: btsx
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: btsx
   ports:

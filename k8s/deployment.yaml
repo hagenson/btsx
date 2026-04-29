@@ -81,4 +81,4 @@ spec:
       volumes:
       - name: btsx-data
         persistentVolumeClaim:
-          claimName: btsx-pvc
+          claimName: btsx-data

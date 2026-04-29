@@ -1,0 +1,48 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch btsxweb (HTTPS)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build btsxweb",
+      "program": "${workspaceFolder}/btsxweb/bin/Debug/net9.0/btsxweb.dll",
+      "cwd": "${workspaceFolder}/btsxweb",
+      "stopAtEntry": false,
+      "console": "internalConsole",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "https://localhost:7155;http://localhost:5241"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      }
+    },
+    {
+      "name": "Launch btsxweb (HTTPS, coreclr fallback)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build btsxweb",
+      "program": "${workspaceFolder}/btsxweb/bin/Debug/net9.0/btsxweb.dll",
+      "cwd": "${workspaceFolder}/btsxweb",
+      "stopAtEntry": false,
+      "console": "internalConsole",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "https://localhost:7155;http://localhost:5241"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      }
+    },
+    {
+      "name": "Launch btsxweb (HTTPS, dotnet)",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/btsxweb/btsxweb.csproj",
+      "launchSettingsProfile": "https"
+    }
+  ]
+}

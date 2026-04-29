@@ -57,6 +57,7 @@ export function useAuth(): AuthState & AuthMethods {
 
     let implementer: string | undefined = undefined;
     let authDirection: string | undefined = undefined;
+    let oauthErrorCallback: ((title: string, message: string) => void) | null = null;
 
     watch(sourceServerType, (newType) => {
         if (newType === 'Google') {
@@ -163,6 +164,7 @@ export function useAuth(): AuthState & AuthMethods {
 
     async function invokeOAuth(direction: 'Source' | 'Destination', migrationType: 'Mail' | 'Contacts', onError: (title: string, message: string) => void): Promise<void> {
         try {
+            oauthErrorCallback = onError;
             implementer = direction === 'Source'
                 ? sourceServerType.value
                 : destServerType.value;
@@ -224,6 +226,8 @@ export function useAuth(): AuthState & AuthMethods {
                     destOAuthStatus.value = 'Authenticated';
                 }
             }
+        } else if (event.data.type === 'oauth-error') {
+            oauthErrorCallback?.('Authentication Failed', event.data.error);
         }
     }, false);
 
