@@ -394,3 +394,4 @@ docs/.hugo_build.lock
 # Environment files (ENCRYPTION_KEY must be set manually)
 .env
 .env.local
+appsettings.Development.json
